@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delaro Systems · Demo preview</title>
+  <link rel="stylesheet" href="../app/globals.css">
+  <style>
+    body { background: var(--color-warm-white); }
+    .preview-shell { max-width: 1180px; margin: 0 auto; padding: 32px 36px 80px; }
+    .preview-header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--color-border); padding-bottom:24px; margin-bottom:48px; }
+    .preview-nav { display:flex; gap:8px; flex-wrap:wrap; }
+    .preview-nav button { border:1px solid var(--color-border); background:transparent; color:var(--color-muted); border-radius:6px; padding:9px 12px; font-size:11px; }
+    .preview-nav button.active, .preview-nav button:hover { color:var(--color-navy); border-color:var(--color-sea-glass); background:var(--color-sea-glass-soft); }
+    .preview-view { display:none; } .preview-view.active { display:block; }
+    .preview-intro { display:flex; justify-content:space-between; align-items:end; gap:32px; margin-bottom:48px; }
+    .preview-intro h1 { margin-bottom:12px; } .preview-intro p { color:var(--color-muted); max-width:55ch; line-height:1.6; font-size:13px; }
+    .preview-note { border-top:1px solid var(--color-sea-glass); padding-top:11px; min-width:190px; color:var(--color-muted); font-size:11px; }
+    .preview-note strong { display:block; color:var(--color-navy); font-size:14px; margin-top:7px; }
+    .preview-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-bottom:44px; }
+    .preview-panel { border:1px solid var(--color-border); padding:20px; background:rgba(255,255,255,.25); }
+    .preview-panel h2 { font-size:17px; margin:0 0 20px; } .preview-panel p { color:var(--color-muted); font-size:12px; line-height:1.6; }
+    .preview-metric { font-family:var(--font-display); font-size:31px; font-weight:400; display:block; margin:10px 0 4px; }
+    .preview-list { border-top:1px solid var(--color-border); }
+    .preview-list-row { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:15px 0; border-bottom:1px solid var(--color-border); font-size:12px; }
+    .preview-list-row span { color:var(--color-muted); font-size:10px; }
+    .demo-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px; }
+    .demo-form label { display:flex; flex-direction:column; gap:6px; color:var(--color-muted); font-size:10px; }
+    .demo-form input, .demo-form select { border:1px solid var(--color-border); border-radius:6px; background:white; padding:10px; color:var(--color-navy); }
+    .demo-form button { grid-column:span 2; justify-self:start; border:0; border-radius:6px; background:var(--color-sea-glass); color:var(--color-navy); padding:11px 14px; font-size:11px; font-weight:600; }
+    .pipeline-row { display:grid; grid-template-columns:minmax(220px,1.5fr) 1fr 100px 80px 120px; gap:16px; align-items:center; border-top:1px solid var(--color-border); padding:17px 0; font-size:11px; }
+    .pipeline-row p { margin:5px 0 0; color:var(--color-muted); font-size:10px; line-height:1.45; }
+    .pipeline-row select { border:1px solid var(--color-border); border-radius:5px; background:var(--color-warm-white); padding:7px; font-size:10px; }
+    .tag { color:var(--color-sea-glass); font-size:10px; } .score { font-family:var(--font-display); font-size:20px; }
+    @media(max-width:700px){ .preview-shell{padding:22px 18px 60px}.preview-header,.preview-intro{display:block}.preview-nav{margin-top:22px}.preview-note{margin-top:24px}.preview-grid{grid-template-columns:1fr}.demo-form{grid-template-columns:1fr}.demo-form button{grid-column:span 1}.pipeline-row{grid-template-columns:1fr 1fr;gap:10px}.pipeline-row>div:first-child{grid-column:span 2} }
+  </style>
+</head>
+<body>
+  <main class="preview-shell">
+    <header class="preview-header"><div class="brand-mark"><span class="brand-symbol">D</span><span>DELARO · DEMO</span></div><nav class="preview-nav" aria-label="Demo views"><button class="active" data-view="overview">Overview</button><button data-view="opportunities">Opportunities</button><button data-view="initiatives">Initiatives</button></nav></header>
+    <section class="preview-view active" id="overview"><div class="preview-intro"><div><p class="eyebrow">Operational overview</p><h1>Good systems make<br>progress visible.</h1><p>A clear view of what is changing across Northstar Manufacturing, why it matters, and where attention is needed next.</p></div><div class="preview-note">Next quarterly review<strong>17 October 2026</strong></div></div><div class="preview-grid"><div class="preview-panel"><p class="eyebrow">Active initiatives</p><span class="preview-metric" id="initiative-count">02</span><p>Across current priorities</p></div><div class="preview-panel"><p class="eyebrow">Value realization</p><span class="preview-metric">$—</span><p>Measured value only</p></div><div class="preview-panel"><p class="eyebrow">Needs attention</p><span class="preview-metric">02</span><p>Open blockers</p></div></div><div class="preview-panel"><p class="eyebrow">Current priorities</p><div class="preview-list"><div class="preview-list-row">Shorten the quote-to-order handoff <span>01</span></div><div class="preview-list-row">Create reliable production capacity visibility <span>02</span></div><div class="preview-list-row">Measure rework cost at the source <span>03</span></div></div></div></section>
+    <section class="preview-view" id="opportunities"><div class="preview-intro"><div><p class="eyebrow">Internal Delaro workspace</p><h1>Opportunity pipeline</h1><p>Add a diagnostic opportunity, change its status, and see it persist in this browser.</p></div></div><form class="demo-form" id="opportunity-form"><label>Opportunity title<input name="title" required placeholder="e.g. Delayed handoff"></label><label>Process<input name="process" required placeholder="e.g. Sales → Operations"></label><label>Business consequence<input name="consequence" required placeholder="What does the constraint cause?"></label><label>Initial status<select name="status"><option>Investigate</option><option>Qualified</option><option>Prioritized</option><option>Approved</option></select></label><button type="submit">Add to demo pipeline →</button></form><div class="preview-panel"><div id="pipeline"></div></div></section>
+    <section class="preview-view" id="initiatives"><div class="preview-intro"><div><p class="eyebrow">In motion</p><h1>Initiatives</h1><p>Add and edit the work moving from diagnosis into measurable change.</p></div></div><form class="demo-form" id="initiative-form"><label>Initiative title<input name="title" required placeholder="e.g. Capacity visibility"></label><label>Owner<input name="owner" required value="Jordan Davis"></label><label>Phase<select name="phase"><option>Validation</option><option>Design</option><option>Build</option><option>Test</option><option>Deploy</option><option>Measure</option></select></label><label>Progress<input name="progress" type="number" min="0" max="100" value="0"></label><button type="submit">Add initiative →</button></form><div class="preview-panel"><div id="initiative-list"></div></div></section>
+  </main>
+  <script>
+    const demoOpps = [{title:'Quote-to-order handoff',process:'Sales → Operations',consequence:'Approved work waits for clarification before production planning can begin.',status:'Prioritized',score:22},{title:'Capacity visibility',process:'Production planning',consequence:'Committed capacity is difficult to reconcile with the current production view.',status:'Qualified',score:18},{title:'Rework cost at source',process:'Quality → Finance',consequence:'Rework is visible after the fact, limiting confidence in recurring defects.',status:'Investigate',score:16}];
+    const opps = JSON.parse(localStorage.getItem('delaro.preview.opportunities') || 'null') || demoOpps;
+    const initiatives = JSON.parse(localStorage.getItem('delaro.preview.initiatives') || 'null') || [{title:'Quote-to-order handoff',owner:'Maya Chen',phase:'Design',progress:58},{title:'Capacity visibility',owner:'Elliot Stone',phase:'Validation',progress:31}];
+    function save(){ localStorage.setItem('delaro.preview.opportunities',JSON.stringify(opps)); localStorage.setItem('delaro.preview.initiatives',JSON.stringify(initiatives)); document.getElementById('initiative-count').textContent=String(initiatives.length).padStart(2,'0'); }
+    function renderOpps(){ document.getElementById('pipeline').innerHTML=opps.map((o,i)=>`<div class="pipeline-row"><div><strong>${o.title}</strong><p>${o.consequence}</p></div><div>${o.process}</div><span class="tag">Evidence pending</span><span class="score">${o.score}</span><select data-index="${i}" class="opp-status">${['Investigate','Qualified','Prioritized','Approved','Implementing','Measuring','Complete'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select></div>`).join(''); document.querySelectorAll('.opp-status').forEach(el=>el.onchange=e=>{opps[e.target.dataset.index].status=e.target.value;save()}); }
+    function renderInitiatives(){ document.getElementById('initiative-list').innerHTML=initiatives.map((i,n)=>`<div class="pipeline-row"><div><strong>${i.title}</strong><p>${i.owner}</p></div><div>${i.phase}</div><span>${i.progress}%</span><span class="tag">Active</span><button onclick="editInitiative(${n})">Edit</button></div>`).join(''); }
+    window.editInitiative=(n)=>{const value=prompt('Progress 0–100',initiatives[n].progress); if(value!==null){initiatives[n].progress=Math.max(0,Math.min(100,Number(value)));save();renderInitiatives()}};
+    document.querySelectorAll('[data-view]').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.preview-view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));document.getElementById(btn.dataset.view).classList.add('active');btn.classList.add('active');renderOpps();renderInitiatives()});
+    document.getElementById('opportunity-form').onsubmit=e=>{e.preventDefault();const d=new FormData(e.target);opps.unshift({title:d.get('title'),process:d.get('process'),consequence:d.get('consequence'),status:d.get('status'),score:0});save();renderOpps();e.target.reset()};
+    document.getElementById('initiative-form').onsubmit=e=>{e.preventDefault();const d=new FormData(e.target);initiatives.unshift({title:d.get('title'),owner:d.get('owner'),phase:d.get('phase'),progress:Number(d.get('progress'))});save();renderInitiatives();e.target.reset()};
+    save();renderOpps();renderInitiatives();
+  </script>
+</body>
+</html>
