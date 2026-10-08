@@ -1,0 +1,14 @@
+import { DataRow, DataSection, InternalPage } from "@/components/internal/methodology";
+import { requireInternalUserContext } from "@/lib/auth/context";
+import { getInternalOperationalModel } from "@/lib/data/operational-model";
+import { demoOperationalModel } from "@/lib/operational-model/demo";
+import { updateOperationalStatus } from "./actions";
+
+export default async function InternalOperationsPage() {
+  const context = await requireInternalUserContext();
+  const model = context ? await getInternalOperationalModel() : demoOperationalModel;
+  return <InternalPage stage="Diagnose / operating model" title="Operations" description="Mapped processes, ownership and systems across the client operation. Select a process in the client map to inspect its published flow." demo={!context}>
+    <DataSection title={`Processes · ${model.processes.length}`} empty="No processes mapped yet.">{model.areas.map((area) => <div key={area.id} className="methodology-subsection"><h3>{area.name}</h3>{model.processes.filter((process) => process.operationalAreaId === area.id).map((process) => <DataRow key={process.id} title={process.name} subtitle={process.triggerDescription} values={[{ label: "Status", value: context ? <form action={updateOperationalStatus} className="methodology-inline-form"><input type="hidden" name="kind" value="process"/><input type="hidden" name="id" value={process.id}/><select name="status" defaultValue={process.status} aria-label={`${process.name} status`}><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused</option><option value="retired">Retired</option></select><button type="submit">Save</button></form> : process.status }, { label: "Steps", value: model.steps.filter((step) => step.processId === process.id).length }, { label: "Client map", value: process.clientVisible ? "Published" : "Internal" }]} />)}</div>)}</DataSection>
+    <DataSection title={`Systems · ${model.systems.length}`} empty="No systems mapped yet.">{model.systems.map((system) => <DataRow key={system.id} title={system.name} subtitle={system.description} values={[{ label: "Category", value: system.category ?? "Unspecified" }, { label: "Integration", value: context ? <form action={updateOperationalStatus} className="methodology-inline-form"><input type="hidden" name="kind" value="system"/><input type="hidden" name="id" value={system.id}/><select name="status" defaultValue={system.integrationStatus} aria-label={`${system.name} integration status`}><option value="unknown">Unknown</option><option value="not_integrated">Not integrated</option><option value="planned">Planned</option><option value="partial">Partial</option><option value="integrated">Integrated</option></select><button type="submit">Save</button></form> : system.integrationStatus.replaceAll("_", " ") }, { label: "Record", value: system.systemOfRecord ? "System of record" : "Supporting" }]} />)}</DataSection>
+  </InternalPage>;
+}

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const boundedScore = z.number().int().min(0).max(5);
+const boundedScore = z.number().int().min(1).max(5);
 
 export const opportunityInputSchema = z.object({
   organizationId: z.string().uuid(),

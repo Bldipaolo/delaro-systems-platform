@@ -4,9 +4,12 @@ import { revalidatePath } from "next/cache";
 import { calculateOpportunityScore, priorityForScore } from "@/lib/opportunities/scoring";
 import { opportunityInputSchema } from "@/lib/validation/opportunity";
 import { createClient } from "@/lib/supabase/server";
+import { requireInternalActionContext } from "@/lib/auth/context";
+import { assertOrganizationMemberReference } from "@/lib/auth/references";
 
 export async function createOpportunity(input: unknown) {
   const parsed = opportunityInputSchema.parse(input);
+  const context = await requireInternalActionContext(parsed.organizationId);
   const score = calculateOpportunityScore({
     financialImpact: parsed.financialImpact,
     frequency: parsed.frequency,
@@ -19,9 +22,10 @@ export async function createOpportunity(input: unknown) {
   });
   const supabase = await createClient();
   if (!supabase) throw new Error("Supabase is not configured.");
+  await assertOrganizationMemberReference(supabase, context.organization.id, parsed.ownerId);
 
   const { data, error } = await supabase.from("opportunities").insert({
-    organization_id: parsed.organizationId,
+    organization_id: context.organization.id,
     title: parsed.title,
     department_or_process: parsed.process,
     current_state_problem: parsed.currentStateProblem,

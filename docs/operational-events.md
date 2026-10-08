@@ -1,0 +1,10 @@
+# Operational activity
+
+`systems` is the existing tenant-owned system registry. The new `system_events` table records meaningful operational changes with organization, optional system/process/improvement/decision links, type, severity, plain-language summary, status, source label, occurrence time, and publication state. `system_event_diagnostics` is a one-to-one internal-only extension for structured metadata, source references, and technical details. `exceptions` gives a published event an actionable issue, status, and optional linked decision. One event can have at most one exception.
+
+All links use composite `(organization_id, id)` foreign keys to prevent cross-tenant references. RLS allows Delaro internal roles to read and manage the records. Client members may read only published event summaries and published exceptions linked to a published event. They cannot read diagnostic metadata or write events/exceptions. Client loaders derive the organization server-side and select only plain-language fields. Internal loaders require a Delaro role and retrieve technical details separately.
+
+The client Activity page shows unresolved exceptions and the latest published operational events. Home shows a short preview; Operations links to the full view. The internal Activity route exposes source references and structured metadata behind an expandable technical section. No raw stack trace or payload is included in the client projection.
+
+Apply `supabase/migrations/20261008123622_operational_events.sql` after the decisions migration. The Northstar feed is demo data, not a live integration. Event ingestion, deduplication, retention, and notifications are not yet wired to external systems. The event's `status` describes the event; the exception's `status` is authoritative for the client attention queue.
+An approved decision does create one real `approval_completed` event through a database trigger. Other operational and integration events still require a deliberate internal write; technical retries are not auto-published.

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { requireInternalActionContext } from "@/lib/auth/context";
+import { assertOpportunityReference, assertOrganizationMemberReference } from "@/lib/auth/references";
 
 const initiativeInputSchema = z.object({
   organizationId: z.string().uuid(),
@@ -18,10 +20,15 @@ const initiativeInputSchema = z.object({
 
 export async function createInitiative(input: unknown) {
   const parsed = initiativeInputSchema.parse(input);
+  const context = await requireInternalActionContext(parsed.organizationId);
   const supabase = await createClient();
   if (!supabase) throw new Error("Supabase is not configured.");
+  await Promise.all([
+    assertOpportunityReference(supabase, context.organization.id, parsed.opportunityId),
+    assertOrganizationMemberReference(supabase, context.organization.id, parsed.ownerId),
+  ]);
   const { data, error } = await supabase.from("initiatives").insert({
-    organization_id: parsed.organizationId,
+    organization_id: context.organization.id,
     opportunity_id: parsed.opportunityId,
     title: parsed.title,
     objective: parsed.objective,
@@ -33,5 +40,6 @@ export async function createInitiative(input: unknown) {
   }).select("id").single();
   if (error) throw new Error(error.message);
   revalidatePath("/initiatives");
+  revalidatePath("/internal/initiatives");
   return { id: data.id };
 }

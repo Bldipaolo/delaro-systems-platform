@@ -1,0 +1,50 @@
+export type EvidenceStatus = "pending" | "submitted" | "verified" | "rejected";
+export type ImprovementDirection = "increase" | "decrease" | "target";
+
+export type ImpactMetric = {
+  id: string;
+  initiativeId: string | null;
+  name: string;
+  description: string | null;
+  unit: string;
+  direction: ImprovementDirection;
+  baselineValue: number | null;
+  baselinePeriod: string | null;
+  baselineStatus: EvidenceStatus;
+  targetValue: number | null;
+  targetDate: string | null;
+  currentValue: number | null;
+  measurementPeriod: string | null;
+  source: string | null;
+  measurementMethod: string | null;
+  cadence: string | null;
+  evidenceConfidence: "pending" | "limited" | "supported" | "verified";
+  evidenceDescription: string | null;
+  evidenceUrl: string | null;
+  lastMeasuredAt: string | null;
+  ownerName: string | null;
+  demo: boolean;
+};
+
+export type ClientImprovement = {
+  id: string;
+  name: string;
+  objective: string;
+  status: "On track" | "At risk" | "Complete";
+  currentPhase: string;
+  ownerName: string;
+  nextMilestone: string | null;
+  constraintId: string | null;
+  linkedConstraint: string | null;
+  currentStateProblem: string | null;
+  businessConsequence: string | null;
+  rootCause: string | null;
+  intervention: string | null;
+  implementation: string | null;
+  linkedProcesses: string[];
+  linkedSystems: string[];
+  expectedResult: string | null;
+  measurementPlan: string | null;
+  metrics: ImpactMetric[];
+  demo: boolean;
+};

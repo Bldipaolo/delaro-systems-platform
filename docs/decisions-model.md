@@ -1,0 +1,9 @@
+# Decisions and approvals
+
+`decisions` is the shared decision record. It belongs to an organization, may reference a process, opportunity, and improvement, and records the request, recommendation, consequences, assignee, requester, due date, status, selected outcome, and decision time. `decision_options` holds alternatives. `approvals` holds an assigned person's response. `comments` holds append-only discussion. `decision_events` is an append-only audit log for creation, changes, status transitions, and discussion.
+
+The client Decisions page shows published decisions. The attention queue contains open requests assigned to the current active membership, including questions and exceptions that may be answered by discussion. Approvals require a published option. Requests for changes require an explanation. Elevated and high-risk approvals require the human to type `APPROVE`; high-risk approval also requires a client or Delaro administrator. Approval response and decision transition happen in the same database transaction. No action automatically executes an operational change or spends money.
+
+Server actions derive organization and membership from Supabase auth context, then filter every lookup and write by that organization. RLS restricts tenant access and assigned approval responses. Database triggers validate response ownership and risk confirmation, prevent pre-approved decision records, update the decision, and write audit events. Client comments are append-only. Internal Delaro users may author/publish decisions and options through the schema, but a dedicated internal authoring UI is not yet built.
+
+Apply `supabase/migrations/20261008122113_decisions_and_approvals.sql` after earlier migrations. Existing check-ins remain records at `/reviews`; they are no longer primary client navigation. Demo responses are stored only in an HTTP-only browser cookie, clearly labeled, and never trigger live changes.

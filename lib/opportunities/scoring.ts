@@ -1,5 +1,12 @@
 import type { OpportunityPriority } from "@/lib/domain";
 
+export const priorityRank: Record<OpportunityPriority, number> = {
+  Critical: 4,
+  High: 3,
+  Medium: 2,
+  Low: 1,
+};
+
 export type OpportunityScoreInputs = {
   financialImpact: number;
   frequency: number;

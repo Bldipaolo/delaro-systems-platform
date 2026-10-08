@@ -1,5 +1,8 @@
-"use client";
+import { ClientsView } from "@/components/internal/clients-view";
+import { requireInternalUserContext } from "@/lib/auth/context";
+import { demoOverview } from "@/lib/domain";
 
-import { useState } from "react";
-
-export default function ClientsPage() { const [selected, setSelected] = useState("Northstar Manufacturing"); return <main className="content internal-content"><section className="page-intro compact"><div><p className="eyebrow">Relationship map</p><h1>Clients</h1><p className="intro-copy">Keep the context around each engagement close to the work it is shaping.</p></div><button className="primary-button" type="button" onClick={() => setSelected("New demo workspace")}>Add client <span>→</span></button></section><section className="internal-table"><div className="internal-table-head"><span>Organization</span><span>Engagement</span><span>Current focus</span><span>Status</span></div><button className="internal-table-row" type="button" onClick={() => setSelected("Northstar Manufacturing")}><strong>Northstar Manufacturing</strong><span>Operating system</span><span>Quote-to-order handoff</span><span className="status">● Active</span></button>{selected === "New demo workspace" && <div className="internal-notice">Demo client added locally. Backend records will come later.</div>}</section></main>; }
+export default async function ClientsPage() {
+  const context = await requireInternalUserContext();
+  return <ClientsView organizationName={context?.organization.name ?? demoOverview.organizationName} industry={context?.organization.industry ?? demoOverview.organizationIndustry} status={context?.organization.status ?? "Demo"} demo={!context}/>;
+}

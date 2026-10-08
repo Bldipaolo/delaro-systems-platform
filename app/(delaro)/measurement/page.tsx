@@ -1,5 +1,12 @@
-"use client";
+import { DataRow, DataSection, InternalPage } from "@/components/internal/methodology";
+import { requireInternalUserContext } from "@/lib/auth/context";
+import { getInternalMeasurement } from "@/lib/data/internal-measurement";
 
-import { useState } from "react";
-
-export default function MeasurementPage() { const [notice, setNotice] = useState(""); return <main className="content internal-content"><section className="page-intro compact"><div><p className="eyebrow">Value realization</p><h1>Measurement</h1><p className="intro-copy">Define what will count as progress before the implementation work starts.</p></div></section><section className="internal-table"><div className="internal-table-head"><span>Measure</span><span>Initiative</span><span>Baseline</span><span>Expected</span><span>State</span></div><div className="internal-table-row"><strong>Quote-to-order cycle time</strong><span>Quote-to-order handoff</span><span>8.4 days</span><span>5.5 days</span><span className="status status-at-risk">Pending actual</span></div><div className="internal-table-row"><strong>Capacity plan confidence</strong><span>Capacity visibility</span><span>62%</span><span>90%</span><span className="status">Definition ready</span></div><button className="secondary-button" type="button" onClick={() => setNotice("New measure definition is ready for demo entry.")}>Add measure <span>→</span></button></section>{notice && <button className="toast" type="button" onClick={() => setNotice("")} role="status">{notice}</button>}</main>; }
+export default async function MeasurementPage() {
+  const context = await requireInternalUserContext();
+  const { metrics } = await getInternalMeasurement();
+  const value = (amount: number | null, unit: string) => amount === null ? "Pending" : `${amount.toLocaleString("en-US")} ${unit}`;
+  return <InternalPage stage="Measure / definitions" title="Metrics" description="Baseline, target, and latest observation stay distinct. Unverified observations are visible for review but never reported as a verified result." demo={!context}>
+    <DataSection title={`Defined metrics · ${metrics.length}`} empty="No measures have been defined yet.">{metrics.map((metric) => <DataRow key={metric.id} title={metric.name} subtitle={metric.method} values={[{ label: "Baseline", value: value(metric.baseline, metric.unit) }, { label: "Target", value: value(metric.target, metric.unit) }, { label: "Latest observation", value: value(metric.latestObservation, metric.unit) }, { label: "Observation state", value: metric.observationStatus }, { label: "Confidence", value: metric.confidence }, { label: "Last measured", value: metric.observedAt ? new Date(metric.observedAt).toLocaleDateString("en-US") : "Pending" }]} />)}</DataSection>
+  </InternalPage>;
+}
