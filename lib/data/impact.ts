@@ -2,6 +2,7 @@ import { requireCurrentUserContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
 import { demoImpactMetrics } from "@/lib/measurement/demo";
 import type { ImpactMetric } from "@/lib/measurement/types";
+import { safeEvidenceUrl } from "@/lib/security/safe-url";
 
 type Row = Record<string, unknown>;
 type Client = NonNullable<Awaited<ReturnType<typeof createClient>>>;
@@ -69,7 +70,7 @@ export async function getClientImpact(): Promise<ImpactMetric[]> {
       measurementMethod: textValue(metric.measurement_method), cadence: textValue(metric.cadence),
       evidenceConfidence: metric.confidence_status as ImpactMetric["evidenceConfidence"],
       evidenceDescription: textValue(currentEvidence?.description) ?? textValue(currentEvidence?.source_reference),
-      evidenceUrl: textValue(currentEvidence?.document_url), lastMeasuredAt: textValue(current?.measured_at),
+      evidenceUrl: safeEvidenceUrl(currentEvidence?.document_url), lastMeasuredAt: textValue(current?.measured_at),
       ownerName: textValue(owner?.display_name), demo: false,
     };
   });

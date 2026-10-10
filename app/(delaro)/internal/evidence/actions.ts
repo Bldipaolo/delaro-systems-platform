@@ -26,13 +26,10 @@ export async function reviewEvidence(formData: FormData) {
   if (input.outcome === "verified" && !existing.source_reference?.trim() && !existing.document_url?.trim()) {
     throw new Error("A source reference or document is required before verification.");
   }
-  const { data, error } = await client.from(table).update({
-    verification_status: input.outcome,
-    verified_by_membership_id: input.outcome === "verified" ? context.membership.id : null,
-    verified_at: input.outcome === "verified" ? new Date().toISOString() : null,
-  }).eq("organization_id", context.organization.id).eq("id", input.id)
+  const { data, error } = await client.from(table).update({ verification_status: input.outcome })
+    .eq("organization_id", context.organization.id).eq("id", input.id)
     .in("verification_status", ["pending", "submitted"]).select("id").maybeSingle();
-  if (error) throw new Error(`Unable to review evidence: ${error.message}`);
+  if (error) { console.error("Evidence review failed", { table, code: error.code }); throw new Error("Unable to review this evidence."); }
   if (!data) throw new Error("Evidence changed during review. Reload and try again.");
   revalidatePath("/internal/evidence");
   revalidatePath("/measurement");

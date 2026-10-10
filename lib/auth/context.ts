@@ -4,6 +4,7 @@ import type { Role } from "@/lib/domain";
 import { canViewInternalWorkspace } from "@/lib/auth/permissions";
 import { assertActiveOrganizationId, selectActiveMembership } from "@/lib/auth/organization-selection";
 import { createClient } from "@/lib/supabase/server";
+import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
 export type Profile = {
   id: string;
@@ -39,7 +40,7 @@ export type UserOrganizationContext = {
 };
 
 export function isSupabaseConfigured() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return Boolean(getSupabasePublicConfig());
 }
 
 /**

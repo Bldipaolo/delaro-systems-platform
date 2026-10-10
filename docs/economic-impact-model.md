@@ -1,6 +1,6 @@
 # Economic impact and audit model
 
-Apply `supabase/migrations/20261008001253_economic_impact_models.sql` after the measurement migration. It creates no production amounts or demo rows.
+Apply `supabase/migrations/20261008232314_20261008001253_economic_impact_models.sql` after the measurement migration. It creates no production amounts or demo rows.
 
 ```text
 initiative / opportunity ──< value_models >── measurement_metrics (optional)

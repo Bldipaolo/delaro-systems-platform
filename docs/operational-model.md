@@ -1,6 +1,6 @@
 # Operational model data layer
 
-Migrations: `supabase/migrations/20261007224824_operational_model.sql` and `supabase/migrations/20261007230108_operations_client_publication.sql`. Apply the earlier migrations first. The client Operations map now reads published data; the authoring UI is not yet built.
+Migrations: `supabase/migrations/20261008232258_20261007224824_operational_model.sql` and `supabase/migrations/20261008232304_20261007230108_operations_client_publication.sql`. Apply the earlier migrations first. The client Operations map now reads published data; the authoring UI is not yet built.
 
 ## Relationships
 

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { calculateValueModel, summarizeEconomicImpact } from "@/lib/economic-impact/calculate";
 import { demoValueModels } from "@/lib/economic-impact/demo";
 import type { CalculatedValueModel, EconomicSummary, ValueCategory, ValueEvidence, ValueInput, ValueModel } from "@/lib/economic-impact/types";
+import { safeEvidenceUrl } from "@/lib/security/safe-url";
 
 type Client = NonNullable<Awaited<ReturnType<typeof createClient>>>;
 type Row = Record<string, unknown>;
@@ -51,7 +52,7 @@ async function getEconomicImpact(internal: boolean): Promise<{ models: Calculate
         }));
       const evidence: ValueEvidence[] = evidenceRows.filter((item) => item.model_id === id && (internal || item.client_visible === true)).map((item) => ({
         id: String(item.id), sourceType: String(item.source_type), sourceReference: String(item.source_reference),
-        description: text(item.description), documentUrl: text(item.document_url),
+        description: text(item.description), documentUrl: safeEvidenceUrl(item.document_url),
         verificationStatus: item.verification_status as ValueEvidence["verificationStatus"],
       }));
       const verifiedEvidenceIds = new Set(evidence.filter((item) => item.verificationStatus === "verified").map((item) => item.id));

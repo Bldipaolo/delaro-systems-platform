@@ -20,7 +20,7 @@ PATH="/opt/homebrew/opt/node@22/bin:$PATH" npm ci
 PATH="/opt/homebrew/opt/node@22/bin:$PATH" npm run dev
 ```
 
-Open `http://localhost:3000`. The app runs in demo mode when Supabase variables are absent; demo edits persist in browser local storage.
+Open `http://localhost:3000`. For an explicitly isolated development demo, set `NEXT_PUBLIC_DELARO_DEMO_MODE=true` with Supabase variables absent. Production builds require a complete Supabase URL and publishable key and never silently fall back to demo data.
 
 For a faster production preview:
 
@@ -37,10 +37,11 @@ Copy `.env.example` to `.env.local` when connecting Supabase:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+NEXT_PUBLIC_DELARO_DEMO_MODE=
 ```
 
-Only the browser-safe Supabase URL and anonymous key belong in this file. No service-role key, password, access token, or production credential should be committed.
+Only the browser-safe Supabase URL and publishable key belong in this file. No service-role key, password, access token, or production credential should be committed. The legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` is still accepted for older environments. Allow the exact local origin in Supabase Auth (for example `http://localhost:3200/auth/callback` and its recovery query-string variant) and the deployed HTTPS callback. Keep demo mode off for pilot and production deployments.
 
 ## Project structure
 
@@ -56,15 +57,16 @@ Only the browser-safe Supabase URL and anonymous key belong in this file. No ser
 - `lib/supabase/` — browser and server Supabase clients.
 - `lib/auth/` — role and permission helpers.
 - `lib/validation/` — input schemas.
-- `supabase/migrations/` — database foundation, opportunities/initiatives, operational model, client narratives, evidence-led measurement, and economic-impact schema.
+- `supabase/migrations/` — ordered database foundation, tenant/RLS, operational model, measurement, economic-impact, approval, publication, and private-document migrations.
+- `supabase/tests/pilot_rls.sql` — rollback-only multi-tenant/role integration assertions; run with a privileged test SQL connection.
 - `docs/` — architecture notes.
 - `outputs/delaro-client-demo.html` — self-contained offline client demo.
 
 ## Authentication
 
-With no Supabase environment variables, middleware leaves routes accessible and `/login` offers the demo workspace. When Supabase variables are configured, middleware uses the Supabase SSR client to read the authenticated user and redirects unauthenticated requests to `/login`. The login form uses Supabase password authentication.
+Only explicit development demo mode leaves routes open. With Supabase configured, middleware validates the user for each request and redirects unauthenticated requests to `/login`. The login form accepts a password or sends an invite-only email link. A user can request a password-reset email; the recovery callback exchanges its PKCE code and opens `/account` to set a new password. Sessions use Supabase SSR cookies. Sign-out clears the local session. Passwords are handled by Supabase Auth, not stored in the application database.
 
-The server layout for `app/(delaro)/` checks the resolved membership role before rendering internal routes. Only `delaro_admin` and `delaro_consultant` can enter; other signed-in users are sent to `/overview`. The client Topbar shows **Open internal view** only for those roles. Internal server actions perform their own role and organization checks, including validation of referenced owners and opportunities. Demo mode remains open when Supabase is not configured.
+The server layout for `app/(delaro)/` checks the resolved membership role before rendering internal routes. Only `delaro_admin` and `delaro_consultant` can enter; other signed-in users are sent to `/overview`. The client Topbar shows **Open internal view** only for those roles. Internal server actions perform their own role and organization checks, including validation of referenced owners and opportunities.
 
 ## Supabase and database access
 
@@ -72,18 +74,16 @@ Server-side data access is implemented through `lib/supabase/server.ts`, `lib/au
 
 ## Client and tenant separation
 
-The schema is organization-scoped: opportunities and initiatives carry an `organization_id`, and Supabase queries filter by the organization resolved from the authenticated user. Membership and role tables plus row-level security policies are included in the migrations. Demo mode still uses the Northstar Manufacturing workspace and local browser storage. Production organization switching UI is not yet exposed, but the server context supports multiple active memberships and validates any future organization selection.
+The schema is organization-scoped: tenant-owned rows carry an `organization_id`, and Supabase queries filter by the organization resolved from the authenticated user. RLS and tenant-composite relationships are the final boundary; server actions add role and reference checks. Draft initiatives, internal scope, private diagnostics, and unpublished evidence are not client-readable. Demo mode uses Northstar Manufacturing and local browser storage only when explicitly enabled in development. Production organization switching UI is not yet exposed, but the server context supports multiple active memberships.
+
+Client files use a private `client-documents` Storage bucket and `client_documents` metadata with tenant-aware RLS. Uploads are limited to PDF, PNG, JPEG, DOCX, or XLSX under 10 MB. Downloads are short-lived signed URLs after server-side membership and publication checks. The bucket and policies are created by the migration; no public file URL is used.
 
 ## Known unfinished areas
 
-- Supabase project configuration, production authentication, and live persistence are not connected in the demo environment.
-- Apply `supabase/migrations/20261007223826_opportunity_scores_one_to_five.sql` to an existing database before accepting new 1–5 opportunity scores. It repairs legacy zero inputs and recalculates affected scores and priorities.
-- File uploads/storage, notifications, and real KPI evidence are not implemented. Comments are available only on shared decisions.
-- Some internal navigation and server actions are scaffolding for the next backend phase.
-- Client Improvements and Impact are read-only. Internal authoring and evidence-verification actions still need to be built; no client can enter an actual result from the UI.
-- The client Operations area reads published process maps and has a Northstar demo map. The authoring interface remains unfinished; production content must be mapped and explicitly published by Delaro. See `docs/operational-model.md` for relationships and publication rules.
-- The evidence-led measurement model is documented in `docs/measurement-model.md`. The Northstar Impact values are demo estimates; actual results are intentionally blank until verified evidence exists.
-- Economic value calculations and audit rules are documented in `docs/economic-impact-model.md`. The client ledger distinguishes theoretical, recoverable, expected, and verified realized value. Demo economic factors are illustrative; no verified value or ROI is asserted.
-- Decisions are documented in `docs/decisions-model.md`. Production decisions require the new migration and published records. In demo mode, responses and comments are browser-cookie examples only; they do not authorize work or persist to a database.
-- Operational activity is documented in `docs/operational-events.md`. The client sees published plain-language events and exceptions; technical metadata remains internal. The Northstar feed is illustrative. External event ingestion and notifications remain unfinished.
-- The offline HTML export is a presentation/demo artifact separate from the Next.js application.
+- A Delaro admin user and organization exist in the connected project, but no real client organization, client login, file, metric, or verified result has yet been exercised through the deployed browser workflow. Use [the pilot runbook](docs/pilot-runbook.md) before inviting a client.
+- Supabase Auth's leaked-password protection is disabled in the connected project's advisor report and must be enabled in the Dashboard before launch.
+- Auth recovery, email deliverability, and sign-out persistence still need real-browser acceptance testing with a test account. The code path and unit checks do not prove SMTP delivery.
+- Uploaded documents have type/size restrictions and private access, but no malware scanning, DLP, retention schedule, or automated orphan-object cleanup yet. Do not use for sensitive regulated files until those policies are agreed.
+- Internal authoring covers core process/step/system/constraint/opportunity/improvement records and measurement/value submissions. Advanced dependencies, handoffs, and structured onboarding still require deliberate manual database/Dashboard procedures.
+- The Northstar demo and offline HTML export remain illustrative only. No production result is auto-populated from demo data.
+- See [production-readiness](docs/production-readiness.md) for tested controls and remaining release blockers.

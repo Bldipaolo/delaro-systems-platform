@@ -1,6 +1,6 @@
 # Measurement architecture
 
-Apply `supabase/migrations/20261007231420_client_improvement_narratives.sql` and `supabase/migrations/20261007231423_measurement_architecture.sql` after the operational-model migrations. The migrations add no demo or actual-result rows.
+Apply `supabase/migrations/20261008232306_20261007231420_client_improvement_narratives.sql` and `supabase/migrations/20261008232308_20261007231423_measurement_architecture.sql` after the operational-model migrations. The migrations add no demo or actual-result rows.
 
 ```text
 initiatives ──< measurement_metrics >── processes / process_steps

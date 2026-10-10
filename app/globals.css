@@ -345,6 +345,9 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
 .auth-form input:focus { border-color: var(--color-sea-glass); box-shadow: 0 0 0 3px var(--color-sea-glass-soft); }
 .auth-button:disabled { cursor: wait; opacity: .65; }
 .auth-message { color: var(--color-muted); font-size: 11px; line-height: 1.5; }
+.auth-switch { align-self: flex-start; border: 0; padding: 8px 0; background: none; color: var(--color-navy); font-size: 11px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.auth-switch:hover { color: var(--color-sea-glass); }
+.auth-account-email { color: var(--color-muted); font-size: 12px; margin: 0 0 24px; overflow-wrap: anywhere; }
 .auth-footnote { margin-top: 70px; color: var(--color-muted); font-size: 11px; }
 .auth-aside { background: var(--color-navy); color: var(--color-white); padding: 52px clamp(28px, 6vw, 100px); display: flex; flex-direction: column; justify-content: flex-end; }
 .auth-horizon { color: var(--color-sea-glass); font-size: 10px; letter-spacing: .16em; margin-bottom: 22px; }
@@ -835,3 +838,15 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
 .activity-technical-row pre { overflow-x: auto; background: var(--color-white); border: 1px solid var(--color-border); padding: 13px; color: var(--color-slate); font-size: 10px; }
 @media (max-width: 750px) { .activity-exception-list { grid-template-columns: 1fr; } .activity-technical-row details { padding-left: 0; } }
 @media (max-width: 500px) { .activity-event-row { grid-template-columns: 1fr; gap: 6px; } .activity-demo-label { display: inline-block; margin-top: 18px; } .activity-technical-row dl { grid-template-columns: 1fr; } }
+.pilot-editor { border-top: 1px solid var(--line, #d8ddd9); padding: .8rem 0; }
+.pilot-editor > summary { cursor: pointer; font-weight: 600; }
+.pilot-editor > summary:focus-visible { outline: 2px solid #438f80; outline-offset: 3px; }
+.pilot-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem 1.4rem; padding: 1.25rem 0; }
+.pilot-form label { display: grid; gap: .35rem; font-size: .88rem; }
+.pilot-form input:not([type=checkbox]), .pilot-form select, .pilot-form textarea { width: 100%; min-width: 0; border: 1px solid var(--line, #cbd2d0); border-radius: 2px; background: transparent; color: inherit; padding: .65rem; font: inherit; }
+.pilot-form textarea { min-height: 5rem; }
+.pilot-form .pilot-check { display: flex; align-items: center; gap: .55rem; }
+.pilot-form button { align-self: end; justify-self: start; border: 1px solid currentColor; border-radius: 2px; background: transparent; color: inherit; padding: .65rem .9rem; cursor: pointer; }
+.pilot-form button:focus-visible { outline: 2px solid #438f80; outline-offset: 3px; }
+.pilot-step-list { margin-left: 1.25rem; border-left: 1px solid var(--line, #d8ddd9); padding-left: 1rem; }
+.pilot-step-list p { margin: .55rem 0; }

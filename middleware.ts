@@ -1,15 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
 export async function middleware(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const config = getSupabasePublicConfig();
 
-  // Demo mode keeps the shell inspectable before a Supabase project is connected.
-  if (!url || !key) return NextResponse.next();
+  // Only explicitly enabled development demo mode may bypass authentication.
+  if (!config) return NextResponse.next();
+  if (request.nextUrl.pathname === "/auth/callback") return NextResponse.next();
 
   let response = NextResponse.next({ request });
-  const supabase = createServerClient(url, key, {
+  const supabase = createServerClient(config.url, config.key, {
     cookies: {
       getAll() { return request.cookies.getAll(); },
       setAll(cookiesToSet) {
@@ -22,8 +23,11 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user && request.nextUrl.pathname !== "/login") {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const redirect = NextResponse.redirect(new URL("/login", request.url));
+    redirect.headers.set("Cache-Control", "private, no-store");
+    return redirect;
   }
+  response.headers.set("Cache-Control", "private, no-store");
   return response;
 }
 
