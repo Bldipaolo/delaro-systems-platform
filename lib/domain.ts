@@ -34,6 +34,8 @@ export type ClientOverview = {
   organizationIndustry: string;
   priorities: string[];
   activeInitiatives: Initiative[];
+  theoreticalOpportunityValue: string;
+  recoverableOpportunityValue: string;
   estimatedOpportunityValue: string;
   realizedValue: string;
 };
@@ -68,7 +70,9 @@ export const demoOverview: ClientOverview = {
       status: "At risk",
     },
   ],
-  estimatedOpportunityValue: "$—",
+  theoreticalOpportunityValue: "$148,667",
+  recoverableOpportunityValue: "$118,933",
+  estimatedOpportunityValue: "$89,200",
   realizedValue: "$—",
 };
 

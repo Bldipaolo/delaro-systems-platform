@@ -13,3 +13,5 @@ export const ReviewIcon = (props: IconProps) => <Icon {...props}><rect x="3" y="
 export const DecisionIcon = (props: IconProps) => <Icon {...props}><path d="M5 5h14v14H5zM8 9h8M8 13h5M8 16l2 2 5-5"/></Icon>;
 export const ArrowIcon = (props: IconProps) => <Icon {...props}><path d="M5 12h13M13 6l6 6-6 6"/></Icon>;
 export const ChevronIcon = (props: IconProps) => <Icon {...props}><path d="m7 9 5 5 5-5"/></Icon>;
+export const MenuIcon = (props: IconProps) => <Icon {...props}><path d="M4 8h16M4 16h16"/></Icon>;
+export const CloseIcon = (props: IconProps) => <Icon {...props}><path d="M5 5l14 14M19 5 5 19"/></Icon>;

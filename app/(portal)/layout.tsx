@@ -13,5 +13,5 @@ export default async function PortalLayout({ children }: Readonly<{ children: Re
   const organizationName = context?.organization.name ?? (isSupabaseConfigured() ? "Workspace unavailable" : demoOverview.organizationName);
   const userName = context?.profile?.fullName ?? context?.profile?.email ?? context?.user.email ?? (isSupabaseConfigured() ? "Account member" : "Jordan Davis");
   const userRole = context ? roleLabels[context.role] : (isSupabaseConfigured() ? "Client workspace" : "Client admin");
-  return <div className="portal-shell"><Sidebar organizationName={organizationName} userName={userName} userRole={userRole}/><div className="portal-main"><Topbar organizationName={organizationName} demoMode={!isSupabaseConfigured()} canOpenInternal={context ? canViewInternalWorkspace(context.role) : false}/>{children}</div></div>;
+  return <div className="portal-shell"><Sidebar organizationName={organizationName} userName={userName} userRole={userRole}/><div className="portal-main"><Topbar organizationName={organizationName} demoMode={!isSupabaseConfigured()} demoData={context?.organization.demoMode ?? false} canOpenInternal={context ? canViewInternalWorkspace(context.role) : false}/>{children}</div></div>;
 }

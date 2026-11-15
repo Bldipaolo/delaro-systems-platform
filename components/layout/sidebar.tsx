@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { DecisionIcon, DocumentIcon, InitiativeIcon, OperationsIcon, OverviewIcon, PerformanceIcon } from "./icons";
+import { CloseIcon, DecisionIcon, DocumentIcon, InitiativeIcon, MenuIcon, OperationsIcon, OverviewIcon, PerformanceIcon } from "./icons";
+import { useMobileNavigation } from "./use-mobile-navigation";
 
 const navigation = [
   { label: "Home", href: "/overview", icon: OverviewIcon },
@@ -15,20 +15,15 @@ const navigation = [
 ] as const;
 
 export function Sidebar({ organizationName, userName, userRole }: { organizationName: string; userName: string; userRole: string }) {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, panelRef, triggerRef } = useMobileNavigation();
   const pathname = usePathname();
-  useEffect(() => {
-    if (!open) return;
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [open]);
   const organizationInitial = organizationName.trim().charAt(0).toUpperCase() || "D";
   const userInitials = userName.split(/\s+/).map((part) => part.charAt(0)).slice(0, 2).join("").toUpperCase();
   return <>
-    <button className="mobile-menu" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="client-navigation" aria-label={open ? "Close navigation" : "Open navigation"}>{open ? "Close" : "Menu"}</button>
-    {open && <button className="mobile-nav-backdrop" type="button" aria-label="Close navigation" onClick={() => setOpen(false)}/>}
-    <aside className={`sidebar ${open ? "sidebar-open" : ""}`} id="client-navigation">
+    <button ref={triggerRef} className="mobile-menu" type="button" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="client-navigation" aria-label="Open navigation"><MenuIcon size={18}/><span>Menu</span></button>
+    {open && <button className="mobile-nav-backdrop" type="button" tabIndex={-1} aria-label="Close navigation" onClick={() => setOpen(false)}/>}
+    <aside ref={panelRef} className={`sidebar ${open ? "sidebar-open" : ""}`} id="client-navigation" role={open ? "dialog" : undefined} aria-modal={open || undefined} aria-label={open ? "Client navigation" : undefined}>
+      <button className="mobile-nav-close" type="button" aria-label="Close navigation" onClick={() => setOpen(false)}><CloseIcon size={19}/></button>
       <div className="brand-mark"><span className="brand-symbol">D</span><span>DELARO</span></div>
       <div className="workspace-label">{organizationName.toUpperCase()} WORKSPACE</div>
       <div className="organization-switcher"><span className="organization-avatar">{organizationInitial}</span><span className="organization-name"><strong>{organizationName}</strong><small>Client workspace</small></span></div>

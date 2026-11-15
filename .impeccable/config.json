@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-15T02:20:07.273Z",
+        "reason": "User-specified Delaro brand system requires Inter for body and UI typography."
+      }
+    ]
+  }
+}

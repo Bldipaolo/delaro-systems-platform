@@ -57,3 +57,24 @@ test("executive totals exclude incomplete, unapproved, duplicate, and foreign-cu
   assert.equal(summary.theoreticalMaximum, 41641.6);
   assert.equal(summary.verifiedRealizedValue, null);
 });
+
+test("illustrative dashboard totals keep estimates separate from verified value", () => {
+  const labor = calculateValueModel({ ...base, recoverablePercentage: 80, expectedCapturePercentage: 75 });
+  const revenue = calculateValueModel({ ...base, id: "revenue", benefitStreamKey: "revenue", recoverablePercentage: 80, expectedCapturePercentage: 75,
+    inputs: [
+      { ...base.inputs[0], id: "r1", key: "revenue_per_order", label: "Revenue per order", value: 2875, unit: "USD/order" },
+      { ...base.inputs[1], id: "r2", key: "affected_orders", label: "Affected orders", value: 27, unit: "orders/year" },
+    ],
+  });
+  const rework = calculateValueModel({ ...base, id: "rework", benefitStreamKey: "rework", recoverablePercentage: 80, expectedCapturePercentage: 75,
+    inputs: [
+      { ...base.inputs[0], id: "e1", key: "cost_per_event", label: "Cost per event", value: 420, unit: "USD/event" },
+      { ...base.inputs[1], id: "e2", key: "events", label: "Events", value: 70, unit: "events/year" },
+    ],
+  });
+  const summary = summarizeEconomicImpact([labor, revenue, rework]);
+  assert.equal(summary.theoreticalMaximum, 148666.6);
+  assert.equal(summary.realisticallyRecoverable, 118933.28);
+  assert.equal(summary.expectedAnnualValue, 89199.96);
+  assert.equal(summary.verifiedRealizedValue, null);
+});

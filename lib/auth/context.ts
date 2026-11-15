@@ -19,6 +19,7 @@ export type Organization = {
   industry: string | null;
   status: string;
   engagementStartDate: string | null;
+  demoMode: boolean;
 };
 
 export type OrganizationMembership = {
@@ -75,7 +76,7 @@ export async function getCurrentUserContext(): Promise<UserOrganizationContext |
   const organizationIds = memberships.map((membership) => membership.organizationId);
   const { data: organizationRows, error: organizationsError } = await supabase
     .from("organizations")
-    .select("id,name,industry,status,engagement_start_date")
+    .select("id,name,industry,status,engagement_start_date,demo_mode")
     .in("id", organizationIds);
 
   if (organizationsError) throw new Error(`Unable to resolve organizations: ${organizationsError.message}`);
@@ -86,6 +87,7 @@ export async function getCurrentUserContext(): Promise<UserOrganizationContext |
     industry: row.industry,
     status: row.status,
     engagementStartDate: row.engagement_start_date,
+    demoMode: row.demo_mode,
   }));
 
   const organizationById = new Map(
