@@ -40,7 +40,7 @@ export function TimeSeriesChart({
   const verifiedPath = verified.map((point) => points.findIndex((item) => item.id === point.id)).map((index, sequence) => `${sequence === 0 ? "M" : "L"} ${plot.x(index)} ${plot.y(points[index].value)}`).join(" ");
   const ticks = Array.from({ length: 4 }, (_, index) => plot.low + ((plot.high - plot.low) * index) / 3).reverse();
   return <div className="analytics-chart">
-    <svg viewBox="0 0 734 242" role="img" aria-label="Historical performance chart">
+    <div className="analytics-chart-plot" tabIndex={0} aria-label="Historical performance chart. Scroll horizontally on smaller screens."><svg viewBox="0 0 734 242" role="img" aria-label="Historical performance chart">
       {ticks.map((tick) => <g key={tick}><line x1="54" x2="680" y1={plot.y(tick)} y2={plot.y(tick)} className="analytics-grid-line"/><text x="46" y={plot.y(tick) + 4} textAnchor="end">{valueFormatter(tick)}</text></g>)}
       {references.map((line) => <g key={line.label}><line x1="54" x2="680" y1={plot.y(line.value)} y2={plot.y(line.value)} className={`analytics-reference analytics-reference-${line.tone}`}/><text x="680" y={plot.y(line.value) - 7} textAnchor="end" className="analytics-reference-label">{line.label}</text></g>)}
       {verifiedPath && <path d={verifiedPath} className="analytics-series-line"/>}
@@ -49,8 +49,8 @@ export function TimeSeriesChart({
         <title>{`${point.label}: ${valueFormatter(point.value)} · ${point.status}`}</title>
       </g>)}
       <text x="54" y="232">{formatDate(points[0].date)}</text><text x="680" y="232" textAnchor="end">{formatDate(points.at(-1)?.date ?? null)}</text>
-    </svg>
+    </svg></div>
     <div className="analytics-chart-legend" aria-hidden="true"><span><i className="legend-verified"/>Verified</span>{points.some((item) => item.status === "submitted") && <span><i className="legend-submitted"/>Submitted, not verified</span>}</div>
-    <table className="sr-only"><caption>Historical measurements</caption><thead><tr><th>Period</th><th>Value</th><th>Status</th></tr></thead><tbody>{points.map((point) => <tr key={point.id}><td>{point.label}</td><td>{valueFormatter(point.value)}</td><td>{point.status}</td></tr>)}</tbody></table>
+    <details className="analytics-chart-data"><summary>View measurement data</summary><div className="metric-table-wrap"><table><caption>Historical measurements</caption><thead><tr><th>Period</th><th>Value</th><th>Status</th></tr></thead><tbody>{points.map((point) => <tr key={point.id}><td>{point.label}</td><td>{valueFormatter(point.value)}</td><td>{point.status}</td></tr>)}</tbody></table></div></details>
   </div>;
 }

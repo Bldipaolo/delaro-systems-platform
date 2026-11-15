@@ -952,6 +952,8 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
 .analytics-method-note strong { color: var(--color-slate); font-weight: 600; }
 .analytics-chart-frame { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(230px, .6fr); gap: 42px; padding-top: 26px; }
 .analytics-chart { min-width: 0; }
+.analytics-chart-plot { min-width: 0; }
+.analytics-chart-plot:focus-visible { outline: 2px solid var(--color-sea-glass-ink); outline-offset: 3px; }
 .analytics-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 .analytics-chart svg text { fill: var(--color-muted); font: 10px var(--font-body); }
 .analytics-grid-line { stroke: var(--color-border); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -967,6 +969,12 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
 .analytics-chart-legend span, .financial-breakdown-legend span { display: inline-flex; align-items: center; gap: 7px; }
 .analytics-chart-legend i, .financial-breakdown-legend i { display: inline-block; width: 15px; height: 2px; background: var(--color-sea-glass-ink); }
 .analytics-chart-legend .legend-submitted { height: 8px; width: 8px; border: 1px solid var(--color-slate); border-radius: 50%; background: transparent; }
+.analytics-chart-data { margin-top: 14px; border-top: 1px solid var(--color-border); }
+.analytics-chart-data > summary { width: fit-content; padding: 11px 0; color: var(--color-slate); cursor: pointer; font-size: 10px; text-decoration: underline; text-underline-offset: 3px; }
+.analytics-chart-data table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.analytics-chart-data caption { padding: 8px 0; text-align: left; font-weight: 600; }
+.analytics-chart-data th, .analytics-chart-data td { padding: 9px 12px 9px 0; border-top: 1px solid var(--color-border); text-align: left; }
+.analytics-chart-data th { color: var(--color-muted); font-weight: 500; }
 .analytics-chart-empty { position: relative; min-height: 248px; display: flex; flex-direction: column; justify-content: center; padding: 32px 7%; overflow: hidden; border-bottom: 1px solid var(--color-border); }
 .analytics-chart-empty-line { position: absolute; left: 7%; right: 7%; top: 52%; height: 1px; background: var(--color-border); }
 .analytics-chart-empty-line::after { position: absolute; right: 0; top: -3px; width: 7px; height: 7px; border: 1px solid var(--color-silver); border-radius: 50%; background: var(--color-warm-white); content: ""; }
@@ -1062,6 +1070,43 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
 .financial-periods { margin-top: 24px; }
 .financial-periods > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 14px; padding: 10px 0; border-top: 1px solid var(--color-border); font-size: 11px; }
 .financial-periods small { grid-column: 1 / -1; color: var(--color-muted); font-size: 9px; }
+.internal-analytics-section { margin-top: 58px; }
+.internal-analytics-section:first-of-type { margin-top: 45px; }
+.cost-benefit-comparison { border-bottom: 1px solid var(--color-border); }
+.cost-benefit-legend { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 18px; padding: 18px 0; color: var(--color-muted); font-size: 10px; }
+.cost-benefit-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.cost-benefit-legend i { display: inline-block; width: 15px; height: 3px; }
+.cost-benefit-legend .legend-cost { background: var(--color-slate); }
+.cost-benefit-legend .legend-benefit { background: var(--color-sea-glass-ink); }
+.cost-benefit-row { display: grid; grid-template-columns: minmax(210px, .75fr) minmax(280px, 1.2fr) minmax(330px, 1fr); gap: 28px; align-items: center; min-height: 94px; border-top: 1px solid var(--color-border); }
+.cost-benefit-heading { display: flex; flex-direction: column; gap: 9px; }
+.cost-benefit-heading > div { display: flex; flex-direction: column; gap: 5px; }
+.cost-benefit-heading strong { font: 500 13px/1.4 var(--font-display); }
+.cost-benefit-heading > span { color: var(--color-slate); font: 500 12px var(--font-display); }
+.cost-benefit-bars { display: flex; flex-direction: column; gap: 5px; }
+.cost-benefit-bars i { display: block; min-width: 1px; height: 5px; }
+.cost-benefit-cost { background: var(--color-slate); }
+.cost-benefit-value { background: var(--color-sea-glass-ink); }
+.cost-benefit-row dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.cost-benefit-row dt { color: var(--color-muted); font-size: 9px; line-height: 1.4; }
+.cost-benefit-row dd { margin: 5px 0 0; font-size: 10px; line-height: 1.45; overflow-wrap: anywhere; }
+.internal-workbench { margin-top: 74px; border-top: 1px solid var(--color-navy); padding-top: 24px; }
+.internal-workbench > .analytics-section-heading { border-bottom: 0; }
+.workbench-group, .workbench-record { border-top: 1px solid var(--color-border); }
+.workbench-group:last-child, .workbench-record:last-child { border-bottom: 1px solid var(--color-border); }
+.workbench-group > summary, .workbench-record > summary { cursor: pointer; list-style: none; }
+.workbench-group > summary::-webkit-details-marker, .workbench-record > summary::-webkit-details-marker { display: none; }
+.workbench-group > summary { padding: 17px 0; font: 600 12px var(--font-body); }
+.workbench-group > summary::after { float: right; color: var(--color-sea-glass-ink); content: "+"; }
+.workbench-group[open] > summary::after { content: "−"; }
+.workbench-group > .pilot-form { padding: 22px 0 30px; border-top: 1px solid var(--color-border); }
+.workbench-record > summary { display: flex; justify-content: space-between; gap: 24px; align-items: center; padding: 18px 0; }
+.workbench-record > summary > span:first-child { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.workbench-record > summary strong { font: 500 13px var(--font-display); }
+.workbench-record > summary small { max-width: 75ch; color: var(--color-muted); font-size: 10px; line-height: 1.5; }
+.workbench-record > .pilot-editors { padding: 7px 0 28px 20px; border-left: 1px solid var(--color-sea-glass); }
+.workbench-record .methodology-inline-form { flex-wrap: wrap; padding: 11px 0; border-top: 1px solid var(--color-border); color: var(--color-slate); font-size: 11px; }
+.workbench-group > summary:focus-visible, .workbench-record > summary:focus-visible { outline: 2px solid var(--color-sea-glass-ink); outline-offset: 3px; }
 
 @media (max-width: 1180px) {
   .analytics-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1069,6 +1114,8 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
   .analytics-kpi:nth-child(4) { border-top: 1px solid var(--color-border); }
   .financial-breakdown-row { grid-template-columns: minmax(170px, .7fr) minmax(230px, 1.3fr) minmax(165px, .7fr); gap: 20px; }
   .metric-detail-grid, .financial-audit-layout { gap: 28px; }
+  .cost-benefit-row { grid-template-columns: minmax(180px, .7fr) minmax(230px, 1fr); gap: 20px; padding: 15px 0; }
+  .cost-benefit-row dl { grid-column: 1 / -1; }
   .financial-stage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .financial-stage-grid div:nth-child(3) { border-left: 0; border-top: 1px solid var(--color-border); padding-left: 0; }
   .financial-stage-grid div:nth-child(4) { border-top: 1px solid var(--color-border); }
@@ -1082,6 +1129,7 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
   .financial-breakdown-values { grid-column: 1 / -1; padding-bottom: 15px; }
   .financial-model-index { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .financial-model-index button:nth-child(even) { border-left: 1px solid var(--color-border); }
+  .cost-benefit-legend { justify-content: flex-start; }
 }
 @media (max-width: 600px) {
   .analytics-content { padding-top: 35px; }
@@ -1091,7 +1139,7 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
   .analytics-kpi:first-child { border-top: 0; }
   .analytics-kpi > p { min-height: 0; }
   .analytics-chart svg { min-width: 620px; }
-  .analytics-chart { overflow-x: auto; padding-bottom: 5px; }
+  .analytics-chart-plot { overflow-x: auto; padding-bottom: 5px; }
   .financial-breakdown-legend { justify-content: flex-start; }
   .financial-breakdown-row { grid-template-columns: 1fr; gap: 10px; padding: 17px 0; }
   .financial-breakdown-values { grid-column: auto; padding-bottom: 0; }
@@ -1110,4 +1158,10 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
   .financial-stage-grid { grid-template-columns: 1fr; }
   .financial-stage-grid div, .financial-stage-grid div:not(:first-child), .financial-stage-grid div:nth-child(3) { padding: 13px 0; border-left: 0; border-top: 1px solid var(--color-border); }
   .financial-stage-grid div:first-child { border-top: 0; }
+  .cost-benefit-row { grid-template-columns: 1fr; gap: 12px; }
+  .cost-benefit-row dl { grid-column: auto; grid-template-columns: 1fr; gap: 8px; }
+  .cost-benefit-row dl div { display: grid; grid-template-columns: minmax(120px, .7fr) minmax(0, 1fr); gap: 15px; }
+  .cost-benefit-row dd { margin-top: 0; }
+  .workbench-record > summary { align-items: start; flex-direction: column; gap: 10px; }
+  .workbench-record > .pilot-editors { padding-left: 12px; }
 }

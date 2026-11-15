@@ -41,7 +41,10 @@ export function metricWorkflowState(metric: ImpactMetric): "pending" | "submitte
 
 /** Only approved, same-currency, non-overlapping models can contribute to this series. */
 export function buildVerifiedValueSeries(models: CalculatedValueModel[]): RealizedValuePoint[] {
-  const eligible = selectEconomicModelsForAggregation(models).filter((model) => model.verifiedRealizedValue !== null);
+  const eligible = selectEconomicModelsForAggregation(models);
+  // The executive line follows the same completeness rule as the headline total.
+  // Never plot a partial portfolio while the corresponding total is withheld.
+  if (!eligible.length || eligible.some((model) => model.verifiedRealizedValue === null)) return [];
   const grouped = new Map<string, { date: string; value: number; ids: string[] }>();
 
   for (const model of eligible) {

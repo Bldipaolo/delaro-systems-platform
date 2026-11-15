@@ -8,6 +8,20 @@ import { safeEvidenceUrl } from "@/lib/security/safe-url";
 type Client = NonNullable<Awaited<ReturnType<typeof createClient>>>;
 type Row = Record<string, unknown>;
 
+export type RealizationReviewRecord = {
+  id: string;
+  modelId: string;
+  periodStart: string;
+  periodEnd: string;
+  measuredAt: string;
+  realizedValue: number;
+  annualizedRunRate: number | null;
+  verificationStatus: "pending" | "submitted" | "verified" | "rejected";
+  evidenceId: string | null;
+  evidenceStatus: "pending" | "submitted" | "verified" | "rejected";
+  evidenceReference: string | null;
+};
+
 async function rows(client: Client, table: string, selection: string, organizationId: string): Promise<Row[]> {
   const { data, error } = await client.from(table).select(selection).eq("organization_id", organizationId);
   if (error) throw new Error(`Unable to load ${table}: ${error.message}`);
@@ -21,11 +35,11 @@ function numeric(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-async function getEconomicImpact(internal: boolean): Promise<{ models: CalculatedValueModel[]; summary: EconomicSummary }> {
+async function getEconomicImpact(internal: boolean): Promise<{ models: CalculatedValueModel[]; summary: EconomicSummary; realizationReviews: RealizationReviewRecord[] }> {
   const context = internal ? await requireInternalUserContext() : await requireCurrentUserContext();
   if (!context) {
     const models = demoValueModels.map(calculateValueModel);
-    return { models, summary: summarizeEconomicImpact(models) };
+    return { models, summary: summarizeEconomicImpact(models), realizationReviews: [] };
   }
   const client = await createClient();
   if (!client) throw new Error("Supabase is not configured.");
@@ -79,8 +93,23 @@ async function getEconomicImpact(internal: boolean): Promise<{ models: Calculate
       };
       return calculateValueModel(model);
     });
-  return { models, summary: summarizeEconomicImpact(models) };
+  const evidenceById = new Map(evidenceRows.map((item) => [String(item.id), item]));
+  const realizationReviews: RealizationReviewRecord[] = internal ? snapshotRows.map((snapshot) => {
+    const evidence = evidenceById.get(String(snapshot.evidence_id));
+    return {
+      id: String(snapshot.id), modelId: String(snapshot.model_id),
+      periodStart: String(snapshot.period_start), periodEnd: String(snapshot.period_end), measuredAt: String(snapshot.measured_at),
+      realizedValue: numeric(snapshot.realized_value) ?? Number.NaN, annualizedRunRate: numeric(snapshot.annualized_run_rate),
+      verificationStatus: snapshot.verification_status as RealizationReviewRecord["verificationStatus"],
+      evidenceId: text(snapshot.evidence_id), evidenceStatus: (evidence?.verification_status ?? "pending") as RealizationReviewRecord["evidenceStatus"],
+      evidenceReference: text(evidence?.source_reference),
+    };
+  }).filter((item) => Number.isFinite(item.realizedValue)).sort((a, b) => b.periodEnd.localeCompare(a.periodEnd)) : [];
+  return { models, summary: summarizeEconomicImpact(models), realizationReviews };
 }
 
-export async function getClientEconomicImpact() { return getEconomicImpact(false); }
+export async function getClientEconomicImpact() {
+  const { models, summary } = await getEconomicImpact(false);
+  return { models, summary };
+}
 export async function getInternalEconomicImpact() { return getEconomicImpact(true); }
