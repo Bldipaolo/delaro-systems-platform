@@ -30,12 +30,14 @@ async function getEconomicImpact(internal: boolean): Promise<{ models: Calculate
   const client = await createClient();
   if (!client) throw new Error("Supabase is not configured.");
   const organizationId = context.organization.id;
-  const [modelRows, inputRows, evidenceRows, snapshotRows] = await Promise.all([
+  const [modelRows, inputRows, evidenceRows, snapshotRows, initiativeRows] = await Promise.all([
     rows(client, "value_models", "id,organization_id,initiative_id,opportunity_id,metric_id,name,category,formula_kind,calculation_method,annualization_basis,currency_code,benefit_stream_key,recoverable_percentage,expected_capture_percentage,confidence,confidence_rationale,client_visible,status,aggregation_approved_at", organizationId),
     rows(client, "value_model_inputs", "id,organization_id,model_id,input_key,label,role,value,unit,origin,source_description,evidence_id,client_visible,sort_order", organizationId),
     rows(client, "value_evidence", "id,organization_id,model_id,source_type,source_reference,document_url,description,verification_status,client_visible", organizationId),
     rows(client, "value_realization_snapshots", "id,organization_id,model_id,period_start,period_end,measured_at,realized_units,unit_value,unit_label,realized_value,annualization_factor,annualized_run_rate,annualization_method,evidence_id,verification_status", organizationId),
+    rows(client, "initiatives", "id,organization_id,title", organizationId),
   ]);
+  const initiativeNames = new Map(initiativeRows.map((item) => [String(item.id), String(item.title)]));
 
   const models: CalculatedValueModel[] = modelRows
     .filter((row) => internal || (row.client_visible === true && row.status === "active"))
@@ -66,7 +68,8 @@ async function getEconomicImpact(internal: boolean): Promise<{ models: Calculate
           annualizationMethod: text(snapshot.annualization_method), evidenceId: String(snapshot.evidence_id),
         }));
       const model: ValueModel = {
-        id, initiativeId: text(row.initiative_id), opportunityId: text(row.opportunity_id), metricId: text(row.metric_id),
+        id, initiativeId: text(row.initiative_id), initiativeName: initiativeNames.get(String(row.initiative_id)) ?? null,
+        opportunityId: text(row.opportunity_id), metricId: text(row.metric_id),
         name: String(row.name), category: row.category as ValueCategory, formulaKind: row.formula_kind as ValueModel["formulaKind"],
         calculationMethod: String(row.calculation_method), annualizationBasis: String(row.annualization_basis), currencyCode: String(row.currency_code),
         benefitStreamKey: String(row.benefit_stream_key), recoverablePercentage: numeric(row.recoverable_percentage),

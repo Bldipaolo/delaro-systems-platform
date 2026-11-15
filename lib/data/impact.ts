@@ -1,7 +1,7 @@
 import { requireCurrentUserContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
 import { demoImpactMetrics } from "@/lib/measurement/demo";
-import type { ImpactMetric } from "@/lib/measurement/types";
+import type { EvidenceStatus, ImpactMetric, MetricObservation } from "@/lib/measurement/types";
 import { safeEvidenceUrl } from "@/lib/security/safe-url";
 
 type Row = Record<string, unknown>;
@@ -29,6 +29,10 @@ function period(start: unknown, end: unknown): string | null {
   return first && last ? `${first} – ${last}` : last ?? first;
 }
 
+function evidenceStatus(value: unknown): EvidenceStatus {
+  return value === "submitted" || value === "verified" || value === "rejected" ? value : "pending";
+}
+
 /** Client Impact data. RLS and this mapper both require verified evidence before exposing actuals. */
 export async function getClientImpact(): Promise<ImpactMetric[]> {
   const context = await requireCurrentUserContext();
@@ -36,6 +40,7 @@ export async function getClientImpact(): Promise<ImpactMetric[]> {
   const client = await createClient();
   if (!client) throw new Error("Supabase is not configured.");
   const organizationId = context.organization.id;
+  const canReviewSubmitted = context.role === "delaro_admin" || context.role === "delaro_consultant";
   const [metrics, baselines, targets, observations, evidence, people, systems] = await Promise.all([
     rows(client, "measurement_metrics", "id,organization_id,initiative_id,process_id,process_step_id,name,description,unit,improvement_direction,source_system_id,measurement_method,cadence,owner_membership_id,confidence_status,client_visible", organizationId),
     rows(client, "metric_baselines", "id,organization_id,metric_id,value,period_start,period_end,source_description,evidence_id,verification_status", organizationId),
@@ -45,7 +50,8 @@ export async function getClientImpact(): Promise<ImpactMetric[]> {
     rows(client, "operational_people", "id,organization_id,membership_id,display_name,client_visible", organizationId),
     rows(client, "systems", "id,organization_id,name,client_visible", organizationId),
   ]);
-  const verifiedEvidence = new Map(evidence.filter((item) => item.verification_status === "verified" && item.client_visible === true).map((item) => [item.id, item]));
+  const visibleEvidence = new Map(evidence.filter((item) => item.client_visible === true).map((item) => [item.id, item]));
+  const verifiedEvidence = new Map([...visibleEvidence].filter(([, item]) => item.verification_status === "verified"));
 
   return metrics.filter((metric) => metric.client_visible === true).map((metric) => {
     const id = String(metric.id);
@@ -55,6 +61,28 @@ export async function getClientImpact(): Promise<ImpactMetric[]> {
       .filter((row) => row.metric_id === id && row.verification_status === "verified" && verifiedEvidence.has(row.evidence_id))
       .sort((a, b) => String(b.measured_at).localeCompare(String(a.measured_at)))[0];
     const currentEvidence = verifiedEvidence.get(current?.evidence_id);
+    const metricObservations: MetricObservation[] = observations
+      // Client roles receive only published verified rows. Internal roles can inspect submitted rows
+      // in the same presentation without weakening the RLS publication boundary.
+      .filter((row) => row.metric_id === id && (row.verification_status === "verified" || (canReviewSubmitted && row.verification_status === "submitted")))
+      .map((row) => {
+        const itemEvidence = visibleEvidence.get(row.evidence_id);
+        return {
+          id: String(row.id),
+          value: numberValue(row.measured_value) ?? Number.NaN,
+          measuredAt: String(row.measured_at),
+          periodStart: textValue(row.period_start),
+          periodEnd: textValue(row.period_end),
+          periodLabel: period(row.period_start, row.period_end),
+          source: textValue(row.source_description),
+          verificationStatus: evidenceStatus(row.verification_status),
+          evidenceStatus: evidenceStatus(itemEvidence?.verification_status),
+          evidenceDescription: textValue(itemEvidence?.description) ?? textValue(itemEvidence?.source_reference),
+          evidenceUrl: safeEvidenceUrl(itemEvidence?.document_url),
+        };
+      })
+      .filter((item) => Number.isFinite(item.value))
+      .sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
     const owner = people.find((person) => person.membership_id === metric.owner_membership_id && person.client_visible === true);
     const system = systems.find((item) => item.id === metric.source_system_id && item.client_visible === true);
     return {
@@ -71,7 +99,7 @@ export async function getClientImpact(): Promise<ImpactMetric[]> {
       evidenceConfidence: metric.confidence_status as ImpactMetric["evidenceConfidence"],
       evidenceDescription: textValue(currentEvidence?.description) ?? textValue(currentEvidence?.source_reference),
       evidenceUrl: safeEvidenceUrl(currentEvidence?.document_url), lastMeasuredAt: textValue(current?.measured_at),
-      ownerName: textValue(owner?.display_name), demo: false,
+      ownerName: textValue(owner?.display_name), observations: metricObservations, demo: false,
     };
   });
 }

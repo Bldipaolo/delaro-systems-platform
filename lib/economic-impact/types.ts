@@ -45,6 +45,7 @@ export type RealizationSnapshot = {
 export type ValueModel = {
   id: string;
   initiativeId: string | null;
+  initiativeName?: string | null;
   opportunityId: string | null;
   metricId: string | null;
   name: string;
@@ -78,6 +79,8 @@ export type CalculatedValueModel = ValueModel & {
 
 export type EconomicSummary = {
   currencyCode: string | null;
+  hasCurrencyConflict: boolean;
+  hasBenefitStreamConflict: boolean;
   theoreticalMaximum: number | null;
   realisticallyRecoverable: number | null;
   expectedAnnualValue: number | null;

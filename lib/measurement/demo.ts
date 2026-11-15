@@ -8,7 +8,11 @@ export const demoImpactMetrics: ImpactMetric[] = [
     targetValue: 5.5, targetDate: null, currentValue: null, measurementPeriod: null,
     source: "Commercial handoff log · demo", measurementMethod: "Compare signed agreement and work-order release timestamps",
     cadence: "Monthly", evidenceConfidence: "pending", evidenceDescription: null, evidenceUrl: null,
-    lastMeasuredAt: null, ownerName: "Maya Chen", demo: true,
+    lastMeasuredAt: null, ownerName: "Maya Chen",
+    observations: [{ id: "demo-cycle-time-oct", value: 7.1, measuredAt: "2026-11-02T12:00:00Z",
+      periodStart: "2026-10-01", periodEnd: "2026-10-31", periodLabel: "Oct 1, 2026 – Oct 31, 2026",
+      source: "Commercial handoff log · illustrative", verificationStatus: "submitted", evidenceStatus: "submitted",
+      evidenceDescription: "Illustrative timing sample pending review", evidenceUrl: null }], demo: true,
   },
   {
     id: "demo-capacity", initiativeId: "initiative-capacity", name: "Capacity plan confidence",
@@ -17,7 +21,11 @@ export const demoImpactMetrics: ImpactMetric[] = [
     targetValue: 90, targetDate: null, currentValue: null, measurementPeriod: null,
     source: "Planning review · demo", measurementMethod: "Reconcile committed slots with the production schedule",
     cadence: "Monthly", evidenceConfidence: "pending", evidenceDescription: null, evidenceUrl: null,
-    lastMeasuredAt: null, ownerName: "Elliot Stone", demo: true,
+    lastMeasuredAt: null, ownerName: "Elliot Stone",
+    observations: [{ id: "demo-capacity-oct", value: 74, measuredAt: "2026-11-03T12:00:00Z",
+      periodStart: "2026-10-01", periodEnd: "2026-10-31", periodLabel: "Oct 1, 2026 – Oct 31, 2026",
+      source: "Planning review · illustrative", verificationStatus: "submitted", evidenceStatus: "pending",
+      evidenceDescription: "Illustrative planning sample pending source confirmation", evidenceUrl: null }], demo: true,
   },
   {
     id: "demo-rework", initiativeId: null, name: "Rework cost at source",
@@ -26,7 +34,7 @@ export const demoImpactMetrics: ImpactMetric[] = [
     targetValue: null, targetDate: null, currentValue: null, measurementPeriod: null,
     source: "Quality and finance records · demo", measurementMethod: "Match defect events with labor and material cost",
     cadence: "Monthly", evidenceConfidence: "pending", evidenceDescription: null, evidenceUrl: null,
-    lastMeasuredAt: null, ownerName: "Maya Chen", demo: true,
+    lastMeasuredAt: null, ownerName: "Maya Chen", observations: [], demo: true,
   },
 ];
 

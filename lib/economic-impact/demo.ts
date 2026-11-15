@@ -3,7 +3,7 @@ import type { ValueModel } from "./types";
 // The numeric factors below are the illustrative example supplied in the product brief,
 // not Northstar data. No recoverable, expected, or verified amount is asserted.
 export const demoValueModels: ValueModel[] = [{
-  id: "demo-order-capacity", initiativeId: "initiative-quote-order", opportunityId: null, metricId: null,
+  id: "demo-order-capacity", initiativeId: "initiative-quote-order", initiativeName: "Quote-to-order handoff", opportunityId: null, metricId: null,
   name: "Order-handling labor capacity", category: "labor_savings", formulaKind: "product",
   calculationMethod: "Time saved per order × annual order volume × loaded labor cost",
   annualizationBasis: "440 illustrative orders per year",

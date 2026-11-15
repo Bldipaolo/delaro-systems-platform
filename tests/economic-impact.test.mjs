@@ -45,17 +45,32 @@ test("unverified evidence and overlapping periods cannot become realized totals"
   assert.equal(overlap.verifiedRealizedValue, null);
 });
 
-test("executive totals exclude incomplete, unapproved, duplicate, and foreign-currency models", () => {
+test("executive totals exclude unapproved models and withhold duplicate streams or mixed currencies", () => {
   const valid = calculateValueModel(base);
   const summary = summarizeEconomicImpact([
     valid,
-    calculateValueModel({ ...base, id: "duplicate" }),
     calculateValueModel({ ...base, id: "unapproved", benefitStreamKey: "other", aggregationApproved: false }),
-    calculateValueModel({ ...base, id: "foreign", benefitStreamKey: "foreign", currencyCode: "EUR" }),
   ]);
   assert.equal(summary.eligibleModelCount, 1);
   assert.equal(summary.theoreticalMaximum, 41641.6);
   assert.equal(summary.verifiedRealizedValue, null);
+  const duplicate = summarizeEconomicImpact([valid, calculateValueModel({ ...base, id: "duplicate" })]);
+  assert.equal(duplicate.hasBenefitStreamConflict, true);
+  assert.equal(duplicate.theoreticalMaximum, null);
+  const mixed = summarizeEconomicImpact([valid, calculateValueModel({ ...base, id: "foreign", benefitStreamKey: "foreign", currencyCode: "EUR" })]);
+  assert.equal(mixed.hasCurrencyConflict, true);
+  assert.equal(mixed.currencyCode, null);
+  assert.equal(mixed.theoreticalMaximum, null);
+});
+
+test("executive stage totals are withheld when any eligible model is incomplete", () => {
+  const complete = calculateValueModel({ ...base, recoverablePercentage: 80, expectedCapturePercentage: 75 });
+  const incomplete = calculateValueModel({ ...base, id: "incomplete", benefitStreamKey: "incomplete" });
+  const summary = summarizeEconomicImpact([complete, incomplete]);
+  assert.equal(summary.theoreticalMaximum, 83283.2);
+  assert.equal(summary.realisticallyRecoverable, null);
+  assert.equal(summary.expectedAnnualValue, null);
+  assert.equal(summary.contributingCounts.recoverable, 1);
 });
 
 test("illustrative dashboard totals keep estimates separate from verified value", () => {

@@ -1,6 +1,20 @@
 export type EvidenceStatus = "pending" | "submitted" | "verified" | "rejected";
 export type ImprovementDirection = "increase" | "decrease" | "target";
 
+export type MetricObservation = {
+  id: string;
+  value: number;
+  measuredAt: string;
+  periodStart: string | null;
+  periodEnd: string | null;
+  periodLabel: string | null;
+  source: string | null;
+  verificationStatus: EvidenceStatus;
+  evidenceStatus: EvidenceStatus;
+  evidenceDescription: string | null;
+  evidenceUrl: string | null;
+};
+
 export type ImpactMetric = {
   id: string;
   initiativeId: string | null;
@@ -23,6 +37,7 @@ export type ImpactMetric = {
   evidenceUrl: string | null;
   lastMeasuredAt: string | null;
   ownerName: string | null;
+  observations: MetricObservation[];
   demo: boolean;
 };
 

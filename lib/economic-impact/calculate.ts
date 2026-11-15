@@ -86,24 +86,32 @@ export function calculateValueModel(model: ValueModel): CalculatedValueModel {
   };
 }
 
+/** Shared selection rule for every executive total and time series. */
+export function selectEconomicModelsForAggregation(models: CalculatedValueModel[]): CalculatedValueModel[] {
+  const approved = models.filter((model) => model.valid && model.aggregationApproved);
+  const streamCounts = new Map<string, number>();
+  for (const model of approved) streamCounts.set(model.benefitStreamKey, (streamCounts.get(model.benefitStreamKey) ?? 0) + 1);
+  if ([...streamCounts.values()].some((count) => count > 1)) return [];
+  const currencies = new Set(approved.map((model) => model.currencyCode));
+  return currencies.size === 1 ? approved : [];
+}
+
 /** Approved, complete, same-currency benefit streams are the only source of executive totals. */
 export function summarizeEconomicImpact(models: CalculatedValueModel[]): EconomicSummary {
-  const seen = new Set<string>();
-  const approved = models.filter((model) => {
-    if (!model.valid || !model.aggregationApproved || seen.has(model.benefitStreamKey)) return false;
-    seen.add(model.benefitStreamKey);
-    return true;
-  });
-  const currencyCode = approved[0]?.currencyCode ?? null;
-  const eligible = approved.filter((model) => model.currencyCode === currencyCode);
+  const eligible = selectEconomicModelsForAggregation(models);
+  const currencyCode = eligible[0]?.currencyCode ?? null;
+  const approvedCurrencies = new Set(models.filter((model) => model.valid && model.aggregationApproved).map((model) => model.currencyCode));
+  const hasCurrencyConflict = approvedCurrencies.size > 1;
+  const approvedStreams = models.filter((model) => model.valid && model.aggregationApproved).map((model) => model.benefitStreamKey);
+  const hasBenefitStreamConflict = new Set(approvedStreams).size !== approvedStreams.length;
   const sum = (field: "theoreticalMaximum" | "realisticallyRecoverable" | "expectedAnnualValue" | "verifiedRealizedValue") => {
     const values = eligible.map((model) => model[field]).filter((value): value is number => value !== null);
-    if (!values.length) return null;
+    if (!values.length || values.length !== eligible.length) return null;
     const totalCents = values.reduce((total, value) => total + Math.round(value * 100), 0);
     return Number.isSafeInteger(totalCents) ? totalCents / 100 : null;
   };
   return {
-    currencyCode,
+    currencyCode, hasCurrencyConflict, hasBenefitStreamConflict,
     theoreticalMaximum: sum("theoreticalMaximum"),
     realisticallyRecoverable: sum("realisticallyRecoverable"),
     expectedAnnualValue: sum("expectedAnnualValue"),
