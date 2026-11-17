@@ -38,10 +38,12 @@ Copy `.env.example` to `.env.local` when connecting Supabase:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_APP_URL=
 NEXT_PUBLIC_DELARO_DEMO_MODE=
 ```
 
-Only the browser-safe Supabase URL and publishable key belong in this file. No service-role key, password, access token, or production credential should be committed. The legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` is still accepted for older environments. Allow the exact local origin in Supabase Auth (for example `http://localhost:3200/auth/callback` and its recovery query-string variant) and the deployed HTTPS callback. Keep demo mode off for pilot and production deployments.
+`SUPABASE_SERVICE_ROLE_KEY` is required only by server actions that send client invitations. It must be configured as an encrypted server-only environment variable and must never use a `NEXT_PUBLIC_` prefix or be committed. `NEXT_PUBLIC_APP_URL` is the canonical deployed origin used for invitation callbacks. The legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` is still accepted for older environments. Allow the exact local origin in Supabase Auth (for example `http://localhost:3200/auth/callback`) and the deployed HTTPS callback. Keep demo mode off for pilot and production deployments.
 
 ## Project structure
 
@@ -74,7 +76,7 @@ Server-side data access is implemented through `lib/supabase/server.ts`, `lib/au
 
 ## Client and tenant separation
 
-The schema is organization-scoped: tenant-owned rows carry an `organization_id`, and Supabase queries filter by the organization resolved from the authenticated user. RLS and tenant-composite relationships are the final boundary; server actions add role and reference checks. Draft initiatives, internal scope, private diagnostics, and unpublished evidence are not client-readable. Demo mode uses Northstar Manufacturing and local browser storage only when explicitly enabled in development. Production organization switching UI is not yet exposed, but the server context supports multiple active memberships.
+The schema is organization-scoped: tenant-owned rows carry an `organization_id`, and Supabase queries filter by the organization resolved from the authenticated user. RLS and tenant-composite relationships are the final boundary; server actions add role and reference checks. Draft initiatives, internal scope, private diagnostics, and unpublished evidence are not client-readable. Demo mode uses Northstar Manufacturing and local browser storage only when explicitly enabled in development. The internal Clients workspace exposes organization switching only for active memberships already resolved for the signed-in Delaro user; the cookie remains a non-authoritative preference.
 
 Client files use a private `client-documents` Storage bucket and `client_documents` metadata with tenant-aware RLS. Uploads are limited to PDF, PNG, JPEG, DOCX, or XLSX under 10 MB. Downloads are short-lived signed URLs after server-side membership and publication checks. The bucket and policies are created by the migration; no public file URL is used.
 
@@ -84,6 +86,6 @@ Client files use a private `client-documents` Storage bucket and `client_documen
 - Supabase Auth's leaked-password protection is disabled in the connected project's advisor report and must be enabled in the Dashboard before launch.
 - Auth recovery, email deliverability, and sign-out persistence still need real-browser acceptance testing with a test account. The code path and unit checks do not prove SMTP delivery.
 - Uploaded documents have type/size restrictions and private access, but no malware scanning, DLP, retention schedule, or automated orphan-object cleanup yet. Do not use for sensitive regulated files until those policies are agreed.
-- Internal authoring covers core process/step/system/constraint/opportunity/improvement records and measurement/value submissions. Advanced dependencies, handoffs, and structured onboarding still require deliberate manual database/Dashboard procedures.
+- Stage 1 internal authoring covers client onboarding, member lifecycle, teams, people, process/step/system/data relationships, handoffs, dependencies, constraints, opportunities, improvement scope, and decision requests. Real-client browser acceptance is still required before relying on the workflow for a live engagement.
 - The Northstar demo and offline HTML export remain illustrative only. No production result is auto-populated from demo data.
 - See [production-readiness](docs/production-readiness.md) for tested controls and remaining release blockers.

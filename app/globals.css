@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@300;400;500;600&display=swap');
-@import "tailwindcss";
+@import "tailwindcss" source(none);
 
 :root {
   --color-navy: oklch(0.24 0.055 242);
@@ -1108,6 +1108,33 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
 .workbench-record .methodology-inline-form { flex-wrap: wrap; padding: 11px 0; border-top: 1px solid var(--color-border); color: var(--color-slate); font-size: 11px; }
 .workbench-group > summary:focus-visible, .workbench-record > summary:focus-visible { outline: 2px solid var(--color-sea-glass-ink); outline-offset: 3px; }
 
+/* Stage 1 operating backbone — dense, editorial administration rather than dashboard cards. */
+.client-create { min-width: min(100%, 22rem); align-self: start; }
+.client-directory { margin-top: 38px; border-top: 1px solid var(--color-navy); }
+.client-directory-head, .client-directory-row { display: grid; grid-template-columns: minmax(190px, 1.25fr) minmax(90px, .55fr) minmax(110px, .7fr) minmax(165px, .9fr) minmax(150px, .8fr); gap: 20px; align-items: center; }
+.client-directory-row { min-height: 74px; border-top: 1px solid var(--color-border); color: var(--color-slate); font-size: 11px; }
+.client-directory-row.is-active { box-shadow: inset 2px 0 0 var(--color-sea-glass-ink); padding-left: 14px; }
+.client-directory-row > div:first-child { display: flex; flex-direction: column; gap: 5px; }
+.client-directory-row strong { color: var(--color-navy); font: 500 13px var(--font-display); }
+.client-directory-row small { color: var(--color-muted); font-size: 9px; }
+.client-directory-row a, .client-directory-row button { color: var(--color-sea-glass-ink); font: 600 10px var(--font-body); }
+.client-directory-row button { border: 0; background: transparent; cursor: pointer; padding: 8px 0; }
+.client-admin-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 54px; margin-top: 46px; }
+.pilot-form-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.member-list { margin-top: 18px; border-top: 1px solid var(--color-border); }
+.member-list article { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 15px 0; border-bottom: 1px solid var(--color-border); }
+.member-list article > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.member-list strong { overflow-wrap: anywhere; font: 500 12px var(--font-display); }
+.member-list small, .member-list article > span { color: var(--color-muted); font-size: 9px; }
+.member-controls { display: flex; align-items: center; gap: 7px; }
+.member-controls select, .member-controls button { border: 1px solid var(--color-border); border-radius: 2px; background: transparent; padding: 7px; color: var(--color-slate); font: 10px var(--font-body); }
+.member-controls button { color: var(--color-navy); cursor: pointer; }
+.methodology-inline-links { display: flex; flex-wrap: wrap; gap: 16px; margin: -8px 0 14px; }
+.methodology-inline-links a { color: var(--color-sea-glass-ink); font-size: 10px; text-decoration: underline; text-underline-offset: 3px; }
+.relationship-ledger { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 18px; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
+.relationship-ledger p { margin: 0; padding: 14px 18px 14px 0; color: var(--color-slate); font-size: 10px; line-height: 1.5; }
+.relationship-ledger p:not(:first-child) { padding-left: 18px; border-left: 1px solid var(--color-border); }
+
 @media (max-width: 1180px) {
   .analytics-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .analytics-kpi:nth-child(3) { border-left: 0; border-top: 1px solid var(--color-border); padding-left: 0; }
@@ -1130,6 +1157,10 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
   .financial-model-index { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .financial-model-index button:nth-child(even) { border-left: 1px solid var(--color-border); }
   .cost-benefit-legend { justify-content: flex-start; }
+  .client-directory-head { display: none; }
+  .client-directory-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 18px; padding: 17px 0; }
+  .client-directory-row > div:first-child { grid-column: 1 / -1; }
+  .client-admin-grid { grid-template-columns: 1fr; gap: 12px; }
 }
 @media (max-width: 600px) {
   .analytics-content { padding-top: 35px; }
@@ -1164,4 +1195,8 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
   .cost-benefit-row dd { margin-top: 0; }
   .workbench-record > summary { align-items: start; flex-direction: column; gap: 10px; }
   .workbench-record > .pilot-editors { padding-left: 12px; }
+  .client-directory-row, .member-list article { grid-template-columns: 1fr; }
+  .pilot-form-pair, .member-controls { grid-template-columns: 1fr; display: grid; }
+  .relationship-ledger { grid-template-columns: 1fr; }
+  .relationship-ledger p:not(:first-child) { padding-left: 0; border-top: 1px solid var(--color-border); border-left: 0; }
 }

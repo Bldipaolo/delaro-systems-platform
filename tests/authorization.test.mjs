@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { selectActiveMembership, assertActiveOrganizationId } from "../lib/auth/organization-selection.ts";
-import { canViewInternalWorkspace } from "../lib/auth/permissions.ts";
+import { canAdministerOrganizations, canViewInternalWorkspace } from "../lib/auth/permissions.ts";
 
 const memberships = [
   { organizationId: "client-a", role: "client_admin" },
@@ -27,4 +27,11 @@ test("actions reject an organization ID different from the active context", () =
 test("only Delaro roles can enter internal routes", () => {
   for (const role of ["delaro_admin", "delaro_consultant"]) assert.equal(canViewInternalWorkspace(role), true);
   for (const role of ["client_admin", "client_user", "read_only"]) assert.equal(canViewInternalWorkspace(role), false);
+});
+
+test("only Delaro administrators can provision organizations or manage client memberships", () => {
+  assert.equal(canAdministerOrganizations("delaro_admin"), true);
+  for (const role of ["delaro_consultant", "client_admin", "client_user", "read_only"]) {
+    assert.equal(canAdministerOrganizations(role), false);
+  }
 });

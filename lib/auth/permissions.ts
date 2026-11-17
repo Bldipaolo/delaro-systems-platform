@@ -6,6 +6,10 @@ export function canViewInternalWorkspace(role: Role): boolean {
   return internalRoles.includes(role);
 }
 
+export function canAdministerOrganizations(role: Role): boolean {
+  return role === "delaro_admin";
+}
+
 export function canEditClientData(role: Role): boolean {
   return ["delaro_admin", "delaro_consultant", "client_admin"].includes(role);
 }

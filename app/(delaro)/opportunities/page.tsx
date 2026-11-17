@@ -4,10 +4,12 @@ import { isSupabaseConfigured, requireInternalUserContext } from "@/lib/auth/con
 import { demoOverview } from "@/lib/domain";
 import { createOpportunityFromForm, publishOpportunitySummary, updateOpportunityStatus } from "./actions";
 import { createClient } from "@/lib/supabase/server";
+import { getInternalOperationalModel } from "@/lib/data/operational-model";
 
 export default async function OpportunitiesPage() {
   const context = await requireInternalUserContext();
   const opportunities = await getOpportunities();
+  const operationalModel = context ? await getInternalOperationalModel() : null;
   const client = context ? await createClient() : null;
   const summaries = client ? await client.from("opportunity_client_summaries").select("opportunity_id,title,summary")
     .eq("organization_id", context!.organization.id) : null;
@@ -16,6 +18,7 @@ export default async function OpportunitiesPage() {
   return <main className="content internal-content"><section className="page-intro compact"><div><p className="eyebrow">Internal Delaro workspace</p><h1>Opportunity pipeline</h1><p className="intro-copy">Evidence-led opportunities, scored for judgment and ready to move through qualification.</p></div></section><OpportunityPipeline initialOpportunities={opportunities} organizationName={context?.organization.name ?? demoOverview.organizationName} demoMode={!isSupabaseConfigured()}/>
     {context && <section className="methodology-section"><div className="section-heading"><h2>Internal workflow</h2></div>
       <details className="pilot-editor"><summary>Record an opportunity</summary><form action={createOpportunityFromForm} className="pilot-form">
+        <label>Diagnosed constraint<select name="constraintId" defaultValue=""><option value="">Not linked yet</option>{(operationalModel?.constraints ?? []).map((constraint) => <option key={constraint.id} value={constraint.id}>{constraint.issueDescription}</option>)}</select></label>
         <label>Title<input name="title" minLength={3} required/></label>
         <label>Department or process<input name="process" minLength={2} required/></label>
         <label>Current-state problem<textarea name="currentStateProblem" minLength={10} required/></label>

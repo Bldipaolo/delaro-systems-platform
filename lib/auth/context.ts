@@ -20,6 +20,9 @@ export type Organization = {
   status: string;
   engagementStartDate: string | null;
   demoMode: boolean;
+  description: string | null;
+  businessContext: string | null;
+  engagementStage: string;
 };
 
 export type OrganizationMembership = {
@@ -76,7 +79,7 @@ export async function getCurrentUserContext(): Promise<UserOrganizationContext |
   const organizationIds = memberships.map((membership) => membership.organizationId);
   const { data: organizationRows, error: organizationsError } = await supabase
     .from("organizations")
-    .select("id,name,industry,status,engagement_start_date,demo_mode")
+    .select("id,name,industry,status,engagement_start_date,demo_mode,description,business_context,engagement_stage")
     .in("id", organizationIds);
 
   if (organizationsError) throw new Error(`Unable to resolve organizations: ${organizationsError.message}`);
@@ -88,6 +91,9 @@ export async function getCurrentUserContext(): Promise<UserOrganizationContext |
     status: row.status,
     engagementStartDate: row.engagement_start_date,
     demoMode: row.demo_mode,
+    description: row.description,
+    businessContext: row.business_context,
+    engagementStage: row.engagement_stage,
   }));
 
   const organizationById = new Map(

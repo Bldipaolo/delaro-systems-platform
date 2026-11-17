@@ -58,6 +58,7 @@ export async function createOpportunity(input: unknown) {
 const scored = z.coerce.number().int().min(1).max(5);
 export async function createOpportunityFromForm(formData: FormData) {
   const input = z.object({
+    constraintId: z.union([z.string().uuid(), z.literal("")]),
     title: z.string().trim().min(3).max(160), process: z.string().trim().min(2).max(120),
     currentStateProblem: z.string().trim().min(10).max(4000), rootCause: z.string().trim().max(4000),
     businessConsequence: z.string().trim().min(10).max(4000),
@@ -67,11 +68,26 @@ export async function createOpportunityFromForm(formData: FormData) {
   }).parse(Object.fromEntries(formData));
   const context = await requireInternalUserContext();
   if (!context) throw new Error("An authenticated internal workspace is required.");
-  await createOpportunity({
+  const created = await createOpportunity({
     ...input, organizationId: context.organization.id,
     estimatedAnnualValue: input.estimatedAnnualValue.trim() ? Number(input.estimatedAnnualValue) : null,
     status: "Investigate", ownerId: null, nextAction: "", internalNotes: "",
   });
+  if (input.constraintId) {
+    const client = await createClient();
+    if (!client) throw new Error("The workspace is unavailable.");
+    const { data: constraint } = await client.from("process_constraints").select("id").eq("organization_id", context.organization.id).eq("id", input.constraintId).maybeSingle();
+    if (!constraint) throw new Error("Constraint not found in this organization.");
+    const { data: existing } = await client.from("constraint_diagnostics").select("root_cause,business_consequence,internal_notes").eq("organization_id", context.organization.id).eq("constraint_id", input.constraintId).maybeSingle();
+    const { error } = await client.from("constraint_diagnostics").upsert({
+      organization_id: context.organization.id, constraint_id: input.constraintId,
+      root_cause: existing?.root_cause ?? (input.rootCause || null),
+      business_consequence: existing?.business_consequence ?? input.businessConsequence,
+      internal_notes: existing?.internal_notes ?? null, opportunity_id: created.id,
+    }, { onConflict: "constraint_id" });
+    if (error) throw new Error("The opportunity was saved, but its constraint link could not be completed.");
+    revalidatePath("/internal/constraints");
+  }
 }
 
 export async function updateOpportunityStatus(formData: FormData) {

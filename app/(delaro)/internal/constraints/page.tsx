@@ -12,6 +12,8 @@ export default async function InternalConstraintsPage() {
     {context && model.processes.length > 0 && <DataSection title="New constraint"><details className="pilot-editor"><summary>Record a constraint</summary>
       <form action={saveConstraint} className="pilot-form"><input type="hidden" name="id" value=""/>
         <label>Process<select name="processId">{model.processes.map((process) => <option key={process.id} value={process.id}>{process.name}</option>)}</select></label>
+        <label>Specific step<select name="stepId"><option value="">Process-level</option>{model.steps.map((step) => <option key={step.id} value={step.id}>{step.name}</option>)}</select></label>
+        <label>System involved<select name="systemId"><option value="">None recorded</option>{model.systems.map((system) => <option key={system.id} value={system.id}>{system.name}</option>)}</select></label>
         <label>Issue<input name="issueDescription" minLength={5} required/></label>
         <label>Severity<select name="severity" defaultValue="medium">{["low", "medium", "high", "critical"].map((item) => <option key={item}>{item}</option>)}</select></label>
         <label>Frequency<select name="frequency" defaultValue="occasional">{["rare", "occasional", "frequent", "continuous"].map((item) => <option key={item}>{item}</option>)}</select></label>
@@ -33,6 +35,8 @@ export default async function InternalConstraintsPage() {
         <details className="pilot-editor"><summary>Edit constraint</summary><form action={saveConstraint} className="pilot-form">
           <input type="hidden" name="id" value={constraint.id}/>
           <label>Process<select name="processId" defaultValue={constraint.processId ?? ""}>{model.processes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <label>Specific step<select name="stepId" defaultValue={constraint.stepId ?? ""}><option value="">Process-level</option>{model.steps.map((step) => <option key={step.id} value={step.id}>{step.name}</option>)}</select></label>
+          <label>System involved<select name="systemId" defaultValue={constraint.systemId ?? ""}><option value="">None recorded</option>{model.systems.map((system) => <option key={system.id} value={system.id}>{system.name}</option>)}</select></label>
           <label>Issue<input name="issueDescription" defaultValue={constraint.issueDescription} required/></label>
           <label>Severity<select name="severity" defaultValue={constraint.severity}>{["low", "medium", "high", "critical"].map((item) => <option key={item}>{item}</option>)}</select></label>
           <label>Frequency<select name="frequency" defaultValue={constraint.frequency}>{["rare", "occasional", "frequent", "continuous"].map((item) => <option key={item}>{item}</option>)}</select></label>
@@ -49,6 +53,9 @@ export default async function InternalConstraintsPage() {
           <input type="hidden" name="constraintId" value={constraint.id}/>
           <label>Client-safe root cause<textarea name="rootCauseSummary" defaultValue={publication?.rootCauseSummary ?? ""}/></label>
           <label>Client-safe consequence<textarea name="businessConsequenceSummary" defaultValue={publication?.businessConsequenceSummary ?? ""}/></label>
+          <label>Measured delay · minutes<input name="measuredDelayMinutes" type="number" min="0" step="any" defaultValue={publication?.measuredDelayMinutes ?? ""}/></label>
+          <label>Published opportunity<select name="opportunitySummaryId" defaultValue={publication?.opportunitySummaryId ?? ""}><option value="">None</option>{model.opportunitySummaries.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+          <label>Linked improvement<select name="initiativeId" defaultValue={publication?.initiativeId ?? ""}><option value="">None</option>{model.improvements.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
           <label>Visibility<select name="publish" defaultValue={constraint.clientVisible ? "yes" : "no"}><option value="no">Internal draft</option><option value="yes">Publish to client</option></select></label>
           <button type="submit">Save publication</button></form></details>
       </div>}
