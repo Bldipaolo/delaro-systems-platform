@@ -33,7 +33,7 @@ This record covers the hardening work performed after commit `4c0e44b04dacd1499d
 | Production build | PASS | `npm run build` with the existing public Supabase environment. | Next.js 15.5.29 compiled and generated 31 routes. | None. |
 | SQL integration suite | PASS | Executed `supabase/tests/pilot_rls.sql` against project `qxebrulkxkdvovleoqao`. | Reported: `pilot RLS, Stage 1 tenancy, atomic provisioning, relationship, suspension, and approval assertions passed`; transaction rolled back. | None. |
 | Test-fixture cleanup | PASS | Deleted the temporary acceptance tenants/users and re-counted project records. | Returned to one Auth user, one organization, one membership; zero Stage 1 test users or organizations remained. | None. |
-| Post-fix Vercel deployment | NOT TESTED | Release step not yet performed at the time this matrix was written. | Existing production was confirmed on baseline commit `4c0e44b`. | Push the hardening commit, wait for Vercel, and verify READY plus matching Git SHA. |
+| Post-fix Vercel deployment | PASS | GitHub push auto-deploy, Vercel deployment API inspection, and unauthenticated HTTP smoke checks. | Production deployment `dpl_7D1iN3dEdmcEqHvUxiPDBVqfj2nY` reached `READY`; both Vercel Git source fields matched hardened application commit `0b7f7b5103c872a3a4473296d64e7a57bc6ea215`. `/login` returned `200`, and `/internal/decisions` returned `307` to `/login`. | Invitation delivery configuration remains a separate blocker. |
 
 ## Applied migrations
 
