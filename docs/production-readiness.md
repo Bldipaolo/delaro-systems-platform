@@ -1,52 +1,68 @@
-# Production-readiness review — updated 16 November 2026
+# Production readiness — Stage 1 acceptance
 
-**Status: Stage 1 operating backbone implemented; production readiness still requires live client acceptance.** The application now supports standard internal onboarding, operational mapping, diagnosis, approval, and implementation-readiness workflows without routine database editing. Do not call the service production-ready until the remaining human release gates below pass.
+Updated 17 November 2026.
 
-## Prioritized gaps
+**Status: Stage 1 correctness and tenant-isolation controls pass at the database, authenticated Data API, and browser layers. Production invitation delivery remains a release blocker and was not claimed as tested.**
 
-1. **Real-user acceptance is outstanding.** A rollback-only SQL test proves important RLS and Stage 1 paths; it does not prove browser invitation delivery, password recovery email delivery, uploads, downloads, or the complete client journey with a real second tenant.
-2. **Auth configuration needs a release gate.** Supabase's security advisor reports [leaked-password protection disabled](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection). Enable it, confirm SMTP/rate limits, and test recovery and sign-out in a clean browser with a non-admin test account.
-3. **Document controls need an operating policy.** The bucket is private and RLS-bound, but malware scanning, retention/deletion, DLP, and orphan-object cleanup are not implemented. Limit pilot content to approved, non-regulated files.
-4. **Not every role/table combination has a negative integration test.** The rollback-only suite exercises two tenants, internal/client/read-only roles, membership suspension, provisioning, operational relationship isolation, publication, approval, measurement, value, and Storage, but not every public table or browser action.
-5. **Invitation delivery requires a server secret and Auth configuration.** `SUPABASE_SERVICE_ROLE_KEY` must exist only in server/Vercel environment variables, and the production callback URL must be allowed in Supabase Auth. The code never exposes the key to the browser.
+This record covers the hardening work performed after commit `4c0e44b04dacd1499d1a7ad63e2bece09c8f1895`. It does not approve Stage 2 or add product modules.
 
-## Stage results and acceptance gates
+## Acceptance matrix
 
-| Stage | Implemented and migration notes | Tests and security considerations | Acceptance criteria / current result |
-| --- | --- | --- | --- |
-| 1. Identity, isolation, integrity | Existing SSR password sign-in preserved; recovery link returns to `/account`. Demo requires an explicit development flag. New migrations `pilot_security_integrity`, `fix_pilot_measurement_guard`, `pilot_publication_controls`, and `pilot_measurement_attribution` stamp reviewers/authors, freeze verified records, guard approvals, and separate internal scope from published initiatives. | Unit tests cover demo fail-closed and role/context rules. `supabase/tests/pilot_rls.sql` uses two transient tenants and four users, then rolls back. It checks forged reviewer IDs, immutable verified rows, internal-field privacy, and human approval. Direct SQL tests use `SET LOCAL ROLE authenticated` plus a JWT subject; they are not substitutes for signed API requests. | Database assertions pass. Browser recovery, session persistence, and all-role login still pending. |
-| 2. Diagnostic and delivery authoring | Internal pages create/edit/publish areas, teams, responsible people, processes, steps, systems, data sources, handoffs, dependencies, constraints, opportunities, summaries, and improvements. Improvements link directly to processes and systems. Published note fields must be null. | SQL tests confirm cross-tenant improvement/process links fail and private diagnostics remain hidden. App actions validate all relationship endpoints against the active organization. | Code path, typecheck, tests, and build pass. Live browser authoring with a real engagement is pending. |
-| 3. Measurement and value | Existing metric/evidence/value models now have internal entry and review forms. Baseline, target, observation, evidence, and realization stay distinct. Verified evidence, baselines, observations, realized-value snapshots, and approved economic models are immutable. No actual result is generated from an estimate. | Rollback-only SQL tests verify database-derived reviewer and approver identity, publication boundaries, and attempted rewrites. Existing economic calculation unit tests verify that incomplete or unapproved models do not enter executive totals. Evidence references still require human scrutiny; a source label alone does not prove truth. | Synthetic SQL flow passes. Acceptance with client-provided source material, a separate reviewer, and displayed Impact totals is pending. |
-| 4. Client files | `pilot_client_documents` creates a private 10 MB bucket, tenant-scoped metadata/RLS, restricted MIME types, server upload, and 60-second signed downloads. Client and internal visibility are distinct. | SQL test checks cross-tenant Storage insert denial and client/internal read boundaries. The browser never supplies a trusted storage path or organization ID. No public bucket URL or service-role key is used. | Policy assertions pass. Real file upload/download, malware handling, and retention review remain pending. |
-| 5. Stage 1 operating backbone | Client directory, RLS-governed provisioning, invitations, role/status management, validated organization switching, internal decision requests, required approval roles, and implementation approval gates are present. Contextual links connect process → constraint → opportunity → improvement → decision. | Rollback-only tests cover provisioning, suspension, cross-tenant relationship rejection, assigned human approval, required-role enforcement, and immutable responses. | Functional in code and database. Not accepted until a real admin/client browser walkthrough is signed off. |
+| Journey or control | Result | Actual test method | Evidence / reproduction | Remaining blocker |
+| --- | --- | --- | --- | --- |
+| Baseline commit review | PASS | Inspected Git `main` at `4c0e44b` and traced the four reported paths before editing. | Reproduced action-only initiative approval, ignored callback `next`, split provisioning writes, and `listUsers({ page: 1, perPage: 1000 })`. | None. |
+| Database implementation-approval guard | PASS | Live rollback SQL with `SET LOCAL ROLE authenticated`; authenticated Data API update using a real test session. | Build, Test, Deploy, Measure, and Complete were rejected before approval with PostgreSQL `P0001`. Build and Complete succeeded after the assigned client approval finalized the linked decision. | None. |
+| Atomic, retry-safe organization provisioning | PASS | Live rollback SQL called `provision_client_organization` twice with one request UUID, attempted it as `client_admin`, and injected a membership trigger failure. | One organization and one owner membership after retry; unauthorized call rejected; forced membership failure left zero organization rows. | None. |
+| Existing-account and duplicate-invite resolution | PASS | Node unit tests with Auth/profile directory mocks. | Existing users resolve by the profile email index and `getUserById`; a concurrent duplicate-invite race resolves the newly created account. No Auth-user pagination is used. | Live email delivery still untested. |
+| Safe invitation callback redirect | PASS | Unit tests for callback destination validation plus production build. | `/account` is accepted; external, protocol-relative, backslash, and internal-workspace redirects fall back to `/overview`; recovery always returns `/account?recovery=1`. | None in code. |
+| Brand-new invitation → password setup | NOT TESTED | Attempted public Auth creation and inspected Auth logs. | Supabase returned `over_email_send_rate_limit`; Vercel does not have `SUPABASE_SERVICE_ROLE_KEY`, so the application invitation action could not be executed. | Configure the server-only key, SMTP/rate limits, and allowed production callback; then complete one real invitation. |
+| Password login and session-backed workspace | PASS | Authenticated browser smoke on the production build with two temporary password users. | Both internal and client users reached `/overview`; internal user reached `/opportunities`; client user received no internal-navigation control. | Invitation-originated session remains untested. |
+| Organization selection | PASS | Authenticated browser smoke with one internal user holding two active memberships. | `/clients` displayed both authorized tenants; switching changed the active client from Acceptance A to Acceptance B. | None. |
+| Operational mapping | PASS | Authenticated Data API writes plus client browser `/operations`. | Created an area, process, step, and published constraint. Client page rendered one area, one process, mapped flow, and one known constraint. | No real client data was used. |
+| Constraint → opportunity → business case → improvement | PASS | Authenticated Data API lifecycle and rollback SQL regression test. | Private diagnostic linked the mapped constraint to an opportunity; client summary, economic model, and improvement were created in one tenant. Client could not select `constraint_diagnostics`. | None for Stage 1 correctness. |
+| Human approval and implementation transition | PASS | Assigned client updated the approval through the Data API; internal user then transitioned the improvement. | Decision received `status=approved` and `decided_at`; pre-approval Build failed, post-approval Build passed. An unassigned internal response failed with `P0001`. | None. |
+| Baseline and observation verification | PASS | Authenticated Data API plus client browser `/impact`. | Evidence, baseline, and one observation were verified; a second submitted observation remained hidden. Impact showed baseline 24 hours and latest verified 16 hours. | None for tested path. |
+| Verified economic result | PASS | Authenticated Data API plus client browser `/impact`. | Published model showed $500 theoretical, $300 recoverable, $150 expected, and one separately labeled $500 verified cumulative period. A pending second period was excluded. Values were synthetic acceptance data and then deleted. | None for tested path. |
+| Client reporting excludes pending results | PASS | Client-role Data API queries and browser Impact view. | Query returned exactly one verified observation and one verified realization snapshot; pending rows returned zero client-visible records. | None. |
+| Cross-tenant reads and writes | PASS | Authenticated client Data API against a second tenant plus rollback SQL. | Read returned zero rows; write failed with PostgreSQL `42501`; composite tenant foreign keys rejected cross-tenant links. | Not every table/role pair has a dedicated negative test. |
+| Suspended-user access | PASS | Admin suspended the client membership while the client session remained valid, then client queried organizations/processes. | Both queries returned zero rows; membership was reactivated for the remaining smoke test. | Session revocation is not immediate; RLS denied data using live membership status. |
+| Client access to internal records/routes | PASS | Client Data API query and authenticated browser request to `/internal/operations`. | Internal diagnostic query returned zero rows; internal URL redirected to `/overview`. | None. |
+| Verified-record immutability | PASS | Rollback SQL attempted changes to verified evidence, baseline, observation, realized value, and approved model. | Every mutation was rejected; reviewer/approver membership IDs were database-derived. | Controlled correction records remain future work. |
+| Full unit suite | PASS | `npm test`. | 26 tests passed, 0 failed. | Node emitted existing module-type performance warnings only. |
+| TypeScript | PASS | `npm run typecheck` in an isolated checkout. | Exit code 0. | None. |
+| Production build | PASS | `npm run build` with the existing public Supabase environment. | Next.js 15.5.29 compiled and generated 31 routes. | None. |
+| SQL integration suite | PASS | Executed `supabase/tests/pilot_rls.sql` against project `qxebrulkxkdvovleoqao`. | Reported: `pilot RLS, Stage 1 tenancy, atomic provisioning, relationship, suspension, and approval assertions passed`; transaction rolled back. | None. |
+| Test-fixture cleanup | PASS | Deleted the temporary acceptance tenants/users and re-counted project records. | Returned to one Auth user, one organization, one membership; zero Stage 1 test users or organizations remained. | None. |
+| Post-fix Vercel deployment | NOT TESTED | Release step not yet performed at the time this matrix was written. | Existing production was confirmed on baseline commit `4c0e44b`. | Push the hardening commit, wait for Vercel, and verify READY plus matching Git SHA. |
+
+## Applied migrations
+
+- `stage1_hardening_acceptance`: adds the PostgreSQL initiative-approval trigger and transactional provisioning RPC.
+- `fix_atomic_provisioning_retry`: handles PostgreSQL RLS/`ON CONFLICT` interaction and permits only the owning Delaro administrator to reconcile an orphaned provisioning row.
+
+The original Stage 1 migrations and both hardening migrations are applied to Supabase project `qxebrulkxkdvovleoqao`. The integration suite rolls back all of its own fixtures.
 
 ## Confirmed controls
 
-- The current live project reports **17 applied migrations** and **47/47 public tables with RLS enabled**. Migrations added in this pass are version-aligned locally with the versions recorded by Supabase.
-- Server context uses `auth.getUser()`, active memberships, a non-archived organization, and role checks. Browser-provided organization IDs are not authority.
-- Internal opportunity scores and private diagnostic/value notes are not on client-readable rows. Draft initiatives are hidden; client-visible operational notes have a database check.
-- Approval transitions require the assigned active client member and published option; answered approvals cannot be silently reopened. Verified measurement/value claims cannot be overwritten.
-- Production missing-env configuration fails closed. Demo data remains an explicit development-only path.
-- File metadata and objects have tenant/visibility RLS, and downloads require a fresh short-lived signature.
+- Initiative implementation state is now a PostgreSQL invariant, not merely a server-action check.
+- Organization provisioning uses one `SECURITY INVOKER` database transaction and an idempotency UUID supplied by the form.
+- Invitation account lookup no longer enumerates the Auth directory or assumes fewer than 1,000 users.
+- Callback destinations use a local allowlist and preserve password-recovery behavior.
+- Tenant relationships retain composite foreign keys, application authorization, and RLS.
+- Internal diagnostics and pending measurements/value periods do not appear on client surfaces.
+- Next.js was updated from the vulnerable lockfile version to `15.5.29`; Zod was updated to `4.6.7`.
 
-## Release blockers requiring human action
+## Remaining release blockers
 
-1. Enable leaked-password protection in Supabase Auth; verify allowed callback/recovery URLs, email delivery, throttling, reset, and sign-out with a test client user.
-2. Provision a real pilot client organization and at least one `client_admin` and one `client_user` through the approved onboarding procedure. Run the full browser/API role matrix, including suspended membership and direct Data API attempts.
-3. Run the complete [pilot runbook](pilot-runbook.md) through the new internal client, operations, constraints, opportunities, improvements, and decisions workspaces using client-provided facts. Verify that pending values remain pending and only reviewed results appear as verified.
-4. Agree on document classification, retention, deletion, malware scanning, and response to failed metadata registration before uploading sensitive client material.
-5. Review deployment logging, backups, incident response, query limits/pagination, and retention of decision/evidence audit records before calling the service production-ready.
+1. Add `SUPABASE_SERVICE_ROLE_KEY` to Vercel as an encrypted, server-only variable. Never prefix it with `NEXT_PUBLIC_`.
+2. Configure and verify production SMTP/rate limits and Supabase Auth redirect URLs, then execute a genuine invitation through `/auth/callback?next=/account`, set a password, sign out, and sign back in.
+3. Enable Supabase leaked-password protection.
+4. Resolve or formally risk-accept the PostCSS advisory bundled by Next.js 15.5.29. npm reports the remaining automated fix as a Next.js 16 major upgrade; that upgrade was not introduced during this focused Stage 1 pass.
+5. Complete a real-browser client document upload/download test and approve document retention, malware scanning, and deletion procedures before sensitive files are accepted.
 
-## Medium-priority work
+## Medium-priority follow-up
 
-- Add pagination and search when the client/member/operational directories outgrow the single-pilot scale.
-- Add controlled correction records for immutable verified baselines/models rather than editing history.
-- Bound high-volume reads and add correlation IDs and alerting; avoid returning raw database errors to users.
-- Perform manual keyboard/screen-reader and mobile acceptance, plus a real-browser upload/download test.
-
-## Verification record
-
-- `npm run typecheck` and `npm run build` passed in an isolated copy of the checkout with the pilot Supabase URL/publishable key; `npm test` passed 12 tests.
-- `supabase/tests/pilot_rls.sql` passed against the connected Delaro project. It rolls back all synthetic Auth users, tenant rows, measurements, decisions, and documents. A post-test count confirmed one existing organization/member and zero pilot documents, Storage objects, or value snapshots.
-- Built app HTTP smoke on `localhost:3300`: login returned 200; unauthenticated Overview, internal Operations, and file download redirected to login; a callback without a code redirected to the invalid-link state.
-- Supabase security advisor still reports the Auth warning above. No production-readiness claim is made.
+- Add negative coverage for every role/table combination rather than only the highest-risk tenant, approval, measurement, and value paths.
+- Add controlled correction records for immutable verified claims.
+- Add CI deployment checks so Vercel promotion is gated on unit, TypeScript, build, and SQL integration results.
+- Perform manual keyboard, screen-reader, and mobile acceptance with the pilot client.

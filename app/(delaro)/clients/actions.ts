@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCurrentUserContext } from "@/lib/auth/context";
+import { inviteOrResolveAuthUser, type InvitationAdminClient } from "@/lib/auth/invitations";
 import { canAdministerOrganizations } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -44,28 +45,23 @@ export async function switchOrganization(formData: FormData) {
 
 export async function createOrganization(formData: FormData) {
   const input = z.object({
+    provisioningRequestId: z.string().uuid(),
     name: z.string().trim().min(2).max(160), industry: z.string().trim().max(160),
     description: z.string().trim().max(4000), businessContext: z.string().trim().max(8000),
     engagementStartDate: z.union([z.string().date(), z.literal("")]),
   }).parse(Object.fromEntries(formData));
   const { context, supabase } = await requireOrganizationAdministrator();
-  const organizationId = crypto.randomUUID();
-  const { error } = await supabase.from("organizations").insert({
-    id: organizationId, name: input.name, industry: input.industry || null,
-    description: input.description || null, business_context: input.businessContext || null,
-    engagement_start_date: input.engagementStartDate || null, engagement_stage: "onboarding",
-    status: "active", demo_mode: false, account_owner_id: context.user.id,
+  const { data: organizationId, error } = await supabase.rpc("provision_client_organization", {
+    requested_organization_id: input.provisioningRequestId,
+    organization_name: input.name,
+    organization_industry: input.industry || null,
+    organization_description: input.description || null,
+    organization_business_context: input.businessContext || null,
+    organization_engagement_start_date: input.engagementStartDate || null,
   });
-  if (error) {
+  if (error || !organizationId) {
     console.error("Organization provisioning failed", { code: error?.code });
     throw new Error("Unable to create the client organization.");
-  }
-  const { error: membershipError } = await supabase.from("organization_memberships").insert({
-    organization_id: organizationId, user_id: context.user.id, role: "delaro_admin", status: "active",
-  });
-  if (membershipError) {
-    console.error("Organization owner membership failed", { code: membershipError.code, organizationId });
-    throw new Error("The client record was created, but its administrator membership could not be completed. Contact support before retrying.");
   }
   (await cookies()).set("delaro_active_organization", organizationId, {
     httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/",
@@ -104,19 +100,11 @@ export async function inviteClientMember(formData: FormData) {
   if (input.organizationId !== context.organization.id) throw new Error("Switch to this organization before inviting members.");
 
   const admin = createAdminClient();
-  const { data: listed, error: listError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  if (listError) throw new Error("Unable to check the client account directory.");
-  let user = listed.users.find((candidate) => candidate.email?.toLowerCase() === input.email);
-  if (!user) {
-    const { data, error } = await admin.auth.admin.inviteUserByEmail(input.email, {
-      redirectTo: inviteRedirectUrl(), data: { invited_to_organization: context.organization.name },
-    });
-    if (error || !data.user) {
-      console.error("Client invitation failed", { code: error?.code });
-      throw new Error("Unable to send the client invitation. Verify the email and Auth redirect settings.");
-    }
-    user = data.user;
-  }
+  const { user } = await inviteOrResolveAuthUser(admin as unknown as InvitationAdminClient, {
+    email: input.email,
+    redirectTo: inviteRedirectUrl(),
+    organizationName: context.organization.name,
+  });
 
   const { error } = await supabase.from("organization_memberships").upsert({
     organization_id: context.organization.id, user_id: user.id, role: input.role, status: "active",
