@@ -12,7 +12,8 @@ export function safeAuthRedirectPath(value: string | null | undefined, fallback 
   return `${parsed.pathname}${parsed.search}`;
 }
 
-export function authCallbackDestination(input: { next?: string | null; flow?: string | null }) {
+export function authCallbackDestination(input: { next?: string | null; flow?: string | null; type?: string | null }) {
   if (input.flow === "recovery") return "/account?recovery=1";
+  if (input.type === "invite") return "/account";
   return safeAuthRedirectPath(input.next, "/overview");
 }

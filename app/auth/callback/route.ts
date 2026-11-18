@@ -1,19 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { authCallbackDestination } from "@/lib/auth/redirects";
+import { resolveAuthCallbackAttempt } from "@/lib/auth/callback";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
-  const code = request.nextUrl.searchParams.get("code");
-  if (!code) return NextResponse.redirect(new URL("/login?error=invalid_link", request.url));
+  if (request.nextUrl.searchParams.has("error") || request.nextUrl.searchParams.has("error_code")) {
+    return noStoreRedirect(request, "/login?error=expired_link");
+  }
+
+  const attempt = resolveAuthCallbackAttempt(request.nextUrl.searchParams);
+  if (attempt.kind === "invalid") return noStoreRedirect(request, "/login?error=invalid_link");
 
   const supabase = await createClient();
-  if (!supabase) return NextResponse.redirect(new URL("/login?error=unavailable", request.url));
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) return NextResponse.redirect(new URL("/login?error=expired_link", request.url));
-  const destination = authCallbackDestination({
-    next: request.nextUrl.searchParams.get("next"),
-    flow: request.nextUrl.searchParams.get("flow"),
-  });
+  if (!supabase) return noStoreRedirect(request, "/login?error=unavailable");
+
+  const result = attempt.kind === "code"
+    ? await supabase.auth.exchangeCodeForSession(attempt.code)
+    : await supabase.auth.verifyOtp({ token_hash: attempt.tokenHash, type: attempt.type });
+
+  if (result.error || !result.data.session) return noStoreRedirect(request, "/login?error=expired_link");
+  return noStoreRedirect(request, attempt.destination);
+}
+
+function noStoreRedirect(request: NextRequest, destination: string) {
   const response = NextResponse.redirect(new URL(destination, request.url));
   response.headers.set("Cache-Control", "private, no-store");
   return response;

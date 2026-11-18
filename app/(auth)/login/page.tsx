@@ -3,8 +3,8 @@ import { LoginForm } from "@/components/auth/login-form";
 import { isSupabaseConfigured } from "@/lib/auth/context";
 
 const loginErrors: Record<string, string> = {
-  invalid_link: "This sign-in link is invalid. Request a new one below.",
-  expired_link: "This sign-in link expired or has already been used. Request a new one below.",
+  invalid_link: "This authentication link is malformed. Request a new password-reset or sign-in email below.",
+  expired_link: "This authentication link expired or has already been used. Request a new one below.",
   unavailable: "Sign-in is temporarily unavailable. Please try again later.",
 };
 
