@@ -4,7 +4,7 @@ Updated 17 November 2026.
 
 **Status: Stage 1 correctness and tenant-isolation controls pass at the database, authenticated Data API, and browser layers. Production invitation delivery remains a release blocker and was not claimed as tested.**
 
-This record covers the hardening work performed after commit `4c0e44b04dacd1499d1a7ad63e2bece09c8f1895`. It does not approve Stage 2 or add product modules.
+This record covers the Stage 1 hardening performed after commit `4c0e44b04dacd1499d1a7ad63e2bece09c8f1895` and the focused Stage 2 implementation-management verification appended below.
 
 ## Acceptance matrix
 
@@ -66,3 +66,35 @@ The original Stage 1 migrations and both hardening migrations are applied to Sup
 - Add controlled correction records for immutable verified claims.
 - Add CI deployment checks so Vercel promotion is gated on unit, TypeScript, build, and SQL integration results.
 - Perform manual keyboard, screen-reader, and mobile acceptance with the pilot client.
+
+## Stage 2 implementation-management verification — 17 November 2026
+
+Stage 2 adds implementation records beneath approved improvements without connecting to external n8n instances or storing client credentials.
+
+| Journey or control | Result | Actual test method | Evidence / limitation |
+| --- | --- | --- | --- |
+| Approved improvement → implementation | PASS | Rollback SQL with an authenticated internal JWT subject. | Implementation actor membership was database-derived; parent improvement had a genuine client approval. |
+| Structured architecture | PASS | Rollback SQL inserted architecture controls and ordered input, processing, decision, and output items. | Architecture is internal-only. No secret-bearing fields exist. |
+| Two n8n workflows registered | PASS | Rollback SQL inserted development and staging workflow metadata under one implementation. | Metadata only; no live n8n connection or credentials. |
+| Milestone and publication | PASS | Rollback SQL inserted an implementation-linked initiative milestone and queried it as the client role. | Client saw the published milestone, not private milestone details. |
+| Failed test blocks readiness | PASS | Direct authenticated database transition after a required failed test. | PostgreSQL rejected `ready_for_deployment`. |
+| Client acceptance enables readiness | PASS | Internal review accepted the criterion, passed the remediated test, and an assigned client approved the linked acceptance decision. | PostgreSQL then allowed `ready_for_deployment`. |
+| Deployment bypass prevention | PASS | Direct database update to `deployed` before a deployment record. | PostgreSQL rejected the transition. |
+| Immutable deployment history | PASS | Inserted version `1.0.0`, transitioned to Deployed, then attempted an update. | Update was rejected; deployments are append-only. |
+| Monitoring ownership | PASS | Attempted Monitoring before operational ownership, then supplied owner/support responsibility. | First transition failed; second passed while retaining the explicit `Monitoring not connected` state. |
+| Cross-tenant implementation references | PASS | Attempted an implementation/process link using another tenant's process. | Composite foreign key rejected it. |
+| Client privacy boundary | PASS | Queried published implementation data as the client role. | Client saw the implementation and milestone but not architecture, internal details, or workflow registry rows. |
+| TypeScript | PASS | `npm run typecheck` in an isolated local checkout. | Exit code 0. |
+| Unit tests | PASS | `npm test` in the isolated checkout. | 29 passed, 0 failed. |
+| Production build | PASS | `npm run build` with the configured public Supabase environment. | Next.js 15.5.29 compiled 32 routes, including `/internal/implementations`. |
+| SQL integration suite | PASS | Executed `supabase/tests/pilot_rls.sql` against `qxebrulkxkdvovleoqao`. | Stage 1 and Stage 2 assertions passed; all fixtures rolled back. |
+| Authenticated browser smoke | PASS | Temporary internal test identity and test organization against the local production build. | Password login, active organization context, internal navigation, and the implementation registry rendered successfully. Exact fixtures were deleted and zero remained. |
+| Full browser lifecycle authoring | NOT TESTED | Not executed through every form. | The equivalent lifecycle and negative controls were executed through authenticated SQL; complete multi-form browser acceptance remains required before a live engagement. |
+| Live n8n monitoring | NOT TESTED | Out of Stage 2 scope. | Stage 3 must add authenticated event ingestion before health or execution history can be reported. |
+
+Applied Stage 2 migrations:
+
+- `stage2_implementation_management`
+- `stage2_foreign_key_indexes`
+
+Post-migration Supabase security and health advisors reported no new schema finding. Leaked-password protection remains the existing Auth release blocker. Performance advisories still include legacy policy/index recommendations; the foreign-key paths introduced by Stage 2 received focused covering indexes.

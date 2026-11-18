@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getClientImpact } from "@/lib/data/impact";
 import { demoImprovements } from "@/lib/measurement/demo";
 import type { ClientImprovement } from "@/lib/measurement/types";
+import { getClientImplementations } from "@/lib/data/implementations";
+import { demoImplementations } from "@/lib/implementation-management/demo";
 
 type Client = NonNullable<Awaited<ReturnType<typeof createClient>>>;
 type Row = Record<string, unknown>;
@@ -20,11 +22,14 @@ function stringOrNull(value: unknown): string | null {
 /** Client-approved improvement chain; never queries private opportunities or initiative_internal_details. */
 export async function getClientImprovements(): Promise<ClientImprovement[]> {
   const context = await requireCurrentUserContext();
-  if (!context) return demoImprovements;
+  if (!context) return demoImprovements.map((improvement) => ({
+    ...improvement,
+    implementations: demoImplementations[improvement.id] ?? [],
+  }));
   const client = await createClient();
   if (!client) throw new Error("Supabase is not configured.");
   const organizationId = context.organization.id;
-  const [initiatives, narratives, constraints, publications, processes, steps, systems, processSystems, memberships, people, metrics] = await Promise.all([
+  const [initiatives, narratives, constraints, publications, processes, steps, systems, processSystems, memberships, people, metrics, implementations] = await Promise.all([
     rows(client, "initiatives", "id,organization_id,title,objective,status,current_phase,owner_id,next_milestone", organizationId),
     rows(client, "initiative_client_narratives", "initiative_id,organization_id,current_state_summary,intervention_summary,implementation_summary,expected_result_summary,measurement_plan_summary,client_visible", organizationId),
     rows(client, "process_constraints", "id,organization_id,process_id,step_id,system_id,issue_description,client_visible", organizationId),
@@ -36,6 +41,7 @@ export async function getClientImprovements(): Promise<ClientImprovement[]> {
     rows(client, "organization_memberships", "id,organization_id,user_id,status", organizationId),
     rows(client, "operational_people", "id,organization_id,membership_id,display_name,client_visible", organizationId),
     getClientImpact(),
+    getClientImplementations(),
   ]);
 
   return initiatives.filter((initiative) => narratives.some((item) => item.initiative_id === initiative.id && item.client_visible === true)).map((initiative) => {
@@ -72,7 +78,7 @@ export async function getClientImprovements(): Promise<ClientImprovement[]> {
       linkedSystems: systemIds.map((systemId) => stringOrNull(systems.find((system) => system.id === systemId && system.client_visible === true)?.name)).filter((value): value is string => Boolean(value)),
       expectedResult: stringOrNull(narrative?.expected_result_summary),
       measurementPlan: stringOrNull(narrative?.measurement_plan_summary) ?? improvementMetrics[0]?.measurementMethod ?? null,
-      metrics: improvementMetrics, demo: false,
+      metrics: improvementMetrics, implementations: implementations.get(id) ?? [], demo: false,
     };
   });
 }

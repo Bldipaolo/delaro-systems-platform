@@ -61,5 +61,6 @@ export type ClientImprovement = {
   expectedResult: string | null;
   measurementPlan: string | null;
   metrics: ImpactMetric[];
+  implementations?: import("@/lib/implementation-management/types").ClientImplementation[];
   demo: boolean;
 };

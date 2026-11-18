@@ -884,6 +884,77 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
 .pilot-form button { align-self: end; justify-self: start; border: 1px solid currentColor; border-radius: 2px; background: transparent; color: inherit; padding: .65rem .9rem; cursor: pointer; }
 .pilot-form button:focus-visible { outline: 2px solid #438f80; outline-offset: 3px; }
 
+/* Stage 2 implementation workspace extends the existing editorial workbench. */
+.implementation-registry { margin-bottom: 44px; }
+.implementation-table strong small, .implementation-table span small { display: block; margin-top: 5px; color: var(--color-muted); font: 400 10px/1.35 var(--font-body); }
+.implementation-workspace { border-top: 1px solid var(--color-navy); }
+.implementation-workspace-header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, .32fr); gap: 36px; padding: 36px 0 26px; border-bottom: 1px solid var(--color-border); }
+.implementation-workspace-header h2 { margin: 4px 0 10px; font: 500 clamp(28px, 4vw, 46px)/1.05 var(--font-display); letter-spacing: -.035em; }
+.implementation-workspace-header p { max-width: 760px; color: var(--color-muted); }
+.implementation-workspace-header > div:last-child { align-self: end; border-left: 1px solid var(--color-sea-glass); padding-left: 20px; }
+.implementation-workspace-header > div:last-child span, .implementation-workspace-header > div:last-child small { display: block; }
+.implementation-workspace-header > div:last-child span { font: 600 12px/1.4 var(--font-display); }
+.implementation-workspace-header > div:last-child small { margin-top: 6px; color: var(--color-muted); }
+.implementation-transition { display: flex; align-items: end; gap: 12px; padding: 18px 0 8px; border-top: 1px solid var(--color-border); }
+.implementation-transition label { display: grid; gap: 6px; min-width: 240px; font-size: 12px; }
+.implementation-transition select, .implementation-transition button, .acceptance-row select, .acceptance-row button { border: 1px solid var(--color-border); border-radius: 2px; background: transparent; color: inherit; padding: 9px 11px; font: inherit; }
+.architecture-sequence { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
+.architecture-sequence > section { min-width: 0; padding: 20px; border-left: 1px solid var(--color-border); }
+.architecture-sequence > section:first-child { border-left: 0; }
+.architecture-sequence h3 { margin: 0 0 16px; color: var(--color-muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+.architecture-sequence article { padding: 12px 0; border-top: 1px solid var(--color-border); }
+.architecture-sequence article strong, .architecture-sequence article span { display: block; }
+.architecture-sequence article span { margin-top: 3px; color: var(--color-sea-glass-dark); font-size: 10px; text-transform: uppercase; }
+.architecture-sequence article p { margin-top: 8px; color: var(--color-muted); font-size: 12px; }
+.readiness-ledger, .monitoring-readiness { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid var(--color-border); margin-bottom: 18px; }
+.readiness-ledger span, .monitoring-readiness > div { padding: 17px; border-left: 1px solid var(--color-border); color: var(--color-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+.readiness-ledger span:first-child, .monitoring-readiness > div:first-child { border-left: 0; }
+.readiness-ledger strong, .monitoring-readiness strong { display: block; margin-top: 7px; color: var(--color-navy); font: 600 12px/1.4 var(--font-display); text-transform: none; letter-spacing: 0; }
+.acceptance-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: 12px; align-items: center; padding: 16px 0; border-top: 1px solid var(--color-border); }
+.acceptance-row p { margin-top: 4px; color: var(--color-muted); font-size: 12px; }
+.form-guidance { align-self: end; color: var(--color-muted); font-size: 12px; }
+.client-implementation-progress { margin: 30px 0 8px; padding: 28px 0; border-block: 1px solid var(--color-border); }
+.client-implementation-heading, .client-implementation-record header { display: flex; align-items: flex-start; justify-content: space-between; gap: 22px; }
+.client-implementation-heading p, .client-implementation-record header span, .client-milestone-list > span { color: var(--color-muted); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
+.client-implementation-heading h3 { margin-top: 5px; font: 500 22px/1.2 var(--font-display); }
+.client-implementation-heading > span { color: var(--color-muted); font-size: 11px; }
+.client-implementation-record { padding: 26px 0 6px; border-top: 1px solid var(--color-border); margin-top: 22px; }
+.client-implementation-record header h4 { margin-top: 5px; font: 500 18px/1.2 var(--font-display); }
+.client-implementation-record header > strong { color: var(--color-sea-glass-dark); font: 600 11px/1.4 var(--font-body); }
+.client-implementation-record > p { max-width: 760px; margin-top: 16px; color: var(--color-muted); font-size: 13px; line-height: 1.65; }
+.client-implementation-record .client-implementation-update { color: var(--color-navy); }
+.client-implementation-record dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 22px; border-block: 1px solid var(--color-border); }
+.client-implementation-record dl div { padding: 15px; border-left: 1px solid var(--color-border); }
+.client-implementation-record dl div:first-child { border-left: 0; }
+.client-implementation-record dt { color: var(--color-muted); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+.client-implementation-record dd { margin-top: 7px; font: 500 12px/1.45 var(--font-display); }
+.client-milestone-list { margin-top: 20px; }
+.client-milestone-list > div { display: grid; grid-template-columns: minmax(0, 1fr) 120px 110px; gap: 14px; padding: 12px 0; border-top: 1px solid var(--color-border); font-size: 11px; }
+.client-milestone-list > div span, .client-milestone-list > div small { color: var(--color-muted); }
+.client-monitoring-note { padding-left: 14px; border-left: 1px solid var(--color-sea-glass); }
+
+@media (max-width: 900px) {
+  .architecture-sequence { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .architecture-sequence > section:nth-child(3) { border-left: 0; border-top: 1px solid var(--color-border); }
+  .architecture-sequence > section:nth-child(4) { border-top: 1px solid var(--color-border); }
+  .readiness-ledger, .monitoring-readiness { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .readiness-ledger span:nth-child(3), .monitoring-readiness > div:nth-child(3) { border-left: 0; border-top: 1px solid var(--color-border); }
+  .readiness-ledger span:nth-child(4), .monitoring-readiness > div:nth-child(4) { border-top: 1px solid var(--color-border); }
+}
+
+@media (max-width: 640px) {
+  .implementation-workspace-header, .architecture-sequence, .readiness-ledger, .monitoring-readiness, .acceptance-row { grid-template-columns: 1fr; }
+  .implementation-workspace-header > div:last-child { border-left: 0; border-top: 1px solid var(--color-sea-glass); padding: 16px 0 0; }
+  .architecture-sequence > section, .architecture-sequence > section:nth-child(4) { border-left: 0; border-top: 1px solid var(--color-border); }
+  .readiness-ledger span, .monitoring-readiness > div, .readiness-ledger span:nth-child(4), .monitoring-readiness > div:nth-child(4) { border-left: 0; border-top: 1px solid var(--color-border); }
+  .implementation-transition { align-items: stretch; flex-direction: column; }
+  .implementation-transition label { min-width: 0; }
+  .client-implementation-record dl { grid-template-columns: 1fr 1fr; }
+  .client-implementation-record dl div:nth-child(3) { border-left: 0; border-top: 1px solid var(--color-border); }
+  .client-implementation-record dl div:nth-child(4) { border-top: 1px solid var(--color-border); }
+  .client-milestone-list > div { grid-template-columns: 1fr; gap: 4px; }
+}
+
 /* Delaro reading scale: labels stay secondary without becoming miniature. */
 :is(.operations-process-link, .operations-process-description, .operations-flow-content p, .operations-facts dd, .operations-constraint-inspector dd, .improvement-chain p, .improvement-chain dd, .impact-inspector > p, .impact-facts dd, .economic-method p, .economic-evidence p, .decision-detail-grid p, .activity-exception-row p, .activity-event-body p) { font-size: 13px; }
 :is(.operations-flow-type, .operations-flow-meta, .operations-facts dt, .operations-detail-list span, .operations-detail-list small, .operations-constraint-inspector dt, .improvement-meta span, .improvement-meta strong, .improvement-chain dt, .improvement-select span, .impact-facts dt, .impact-item-heading small, .impact-value-line small, .economic-ledger-name small, .economic-inputs dt, .economic-inputs dd, .decision-meta, .decision-response label, .decision-discussion label, .activity-row-top, .activity-row-meta, .activity-event-time) { font-size: 11px; }

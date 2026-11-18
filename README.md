@@ -48,7 +48,7 @@ NEXT_PUBLIC_DELARO_DEMO_MODE=
 ## Project structure
 
 - `app/(portal)/` — client workspace routes: Home, Operations, Activity, Improvements, Impact, Files, and Decisions. Check-ins remain available as records at `/reviews`. Legacy `/initiatives` and `/performance` URLs redirect to the new pages.
-- `app/(delaro)/` — internal Delaro routes, opportunity pipeline, actions, and internal initiative views.
+- `app/(delaro)/` — internal Delaro routes, opportunity pipeline, improvement actions, and the implementation-management workspace.
 - `app/(auth)/` — login and demo entry experience.
 - `components/` — dashboard, navigation, operations, activity, improvements, impact, decisions, files, check-ins, and opportunity UI.
 - `lib/domain.ts` — shared domain types and demo data.
@@ -56,6 +56,7 @@ NEXT_PUBLIC_DELARO_DEMO_MODE=
 - `lib/operational-model/` — typed people/process/system/data/decision/outcome model.
 - `lib/decisions/` — client decision types and clearly labeled demo examples.
 - `lib/operational-events/` — client-safe activity types and labeled Northstar examples.
+- `lib/implementation-management/` — implementation lifecycle, architecture/workflow registry types, and explicit demo examples.
 - `lib/supabase/` — browser and server Supabase clients.
 - `lib/auth/` — role and permission helpers.
 - `lib/validation/` — input schemas.
@@ -87,5 +88,6 @@ Client files use a private `client-documents` Storage bucket and `client_documen
 - Auth recovery, email deliverability, and sign-out persistence still need real-browser acceptance testing with a test account. The code path and unit checks do not prove SMTP delivery.
 - Uploaded documents have type/size restrictions and private access, but no malware scanning, DLP, retention schedule, or automated orphan-object cleanup yet. Do not use for sensitive regulated files until those policies are agreed.
 - Stage 1 internal authoring covers client onboarding, member lifecycle, teams, people, process/step/system/data relationships, handoffs, dependencies, constraints, opportunities, improvement scope, and decision requests. Real-client browser acceptance is still required before relying on the workflow for a live engagement.
+- Stage 2 records architecture, external n8n metadata, milestones, tests, acceptance, immutable deployments, and monitoring readiness. It does not connect to n8n or infer execution health; authenticated event ingestion remains Stage 3 work. See [implementation management](docs/implementation-management.md).
 - The Northstar demo and offline HTML export remain illustrative only. No production result is auto-populated from demo data.
 - See [production-readiness](docs/production-readiness.md) for tested controls and remaining release blockers.
