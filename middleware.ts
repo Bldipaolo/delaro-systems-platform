@@ -23,7 +23,10 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user && request.nextUrl.pathname !== "/login") {
-    const redirect = NextResponse.redirect(new URL("/login", request.url));
+    const destination = request.nextUrl.pathname === "/account" && request.nextUrl.searchParams.get("recovery") === "1"
+      ? "/login?error=expired_link"
+      : "/login";
+    const redirect = NextResponse.redirect(new URL(destination, request.url));
     redirect.headers.set("Cache-Control", "private, no-store");
     return redirect;
   }
