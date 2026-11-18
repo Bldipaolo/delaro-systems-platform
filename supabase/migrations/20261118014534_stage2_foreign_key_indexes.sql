@@ -1,0 +1,25 @@
+-- Cover Stage 2 foreign-key paths used by tenant validation, ownership lookups,
+-- implementation detail loading, and referential deletes.
+create index implementations_acceptance_decision_idx on public.implementations (organization_id, acceptance_decision_id);
+create index implementations_operational_owner_idx on public.implementations (organization_id, operational_owner_membership_id);
+create index implementations_escalation_owner_idx on public.implementations (organization_id, escalation_owner_membership_id);
+create index implementations_created_by_idx on public.implementations (organization_id, created_by_membership_id);
+create index implementations_updated_by_idx on public.implementations (organization_id, updated_by_membership_id);
+create index implementation_internal_details_tenant_idx on public.implementation_internal_details (organization_id, implementation_id);
+create index implementation_architectures_tenant_idx on public.implementation_architectures (organization_id, implementation_id);
+create index implementation_architecture_items_system_idx on public.implementation_architecture_items (organization_id, system_id);
+create index implementation_processes_process_idx on public.implementation_processes (organization_id, process_id);
+create index implementation_systems_system_idx on public.implementation_systems (organization_id, system_id);
+create index implementation_metrics_metric_idx on public.implementation_metrics (organization_id, metric_id);
+create index implementation_dependencies_upstream_idx on public.implementation_dependencies (organization_id, depends_on_implementation_id);
+create index implementation_workflows_process_idx on public.implementation_workflows (organization_id, process_id);
+create index implementation_workflows_owner_idx on public.implementation_workflows (organization_id, owner_membership_id);
+create index implementation_criteria_reviewer_idx on public.implementation_acceptance_criteria (organization_id, reviewed_by_membership_id);
+create index implementation_tests_tester_idx on public.implementation_tests (organization_id, tester_membership_id);
+create index implementation_deployments_deployer_idx on public.implementation_deployments (organization_id, deployed_by_membership_id);
+create index implementation_deployments_owner_idx on public.implementation_deployments (organization_id, operational_owner_membership_id);
+create index implementation_references_parent_idx on public.implementation_references (organization_id, implementation_id);
+create index implementation_events_actor_idx on public.implementation_events (organization_id, actor_membership_id);
+create index initiative_milestones_implementation_idx on public.initiative_milestones (organization_id, initiative_id, implementation_id);
+create index implementation_milestone_details_parent_idx on public.implementation_milestone_details (organization_id, implementation_id, milestone_id);
+create index implementation_milestone_dependencies_upstream_idx on public.implementation_milestone_dependencies (organization_id, implementation_id, depends_on_milestone_id);

@@ -361,6 +361,178 @@ begin
   exception when others then blocked := true; end;
   if not blocked then raise exception 'Client user satisfied a client-admin approval'; end if;
 
+  -- Stage 2: an approved improvement becomes a structured implementation.
+  perform set_config('request.jwt.claim.sub','a3100000-0000-4000-8000-000000000001',true);
+  insert into public.implementations (
+    id,organization_id,initiative_id,name,implementation_type,operational_problem,desired_outcome,
+    client_solution_summary,client_progress_summary,monitoring_status,client_visible,
+    created_by_membership_id,updated_by_membership_id
+  ) values (
+    'a3300000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001',
+    'a3220000-0000-4000-8000-000000000001','Synthetic n8n implementation','n8n_automation',
+    'Synthetic scheduling records require manual reconciliation','Synchronize approved scheduling records',
+    'Client-safe solution summary','Architecture is being documented','not_connected',true,
+    'a3120000-0000-4000-8000-000000000003','a3120000-0000-4000-8000-000000000003'
+  );
+  if not exists (
+    select 1 from public.implementations
+    where id='a3300000-0000-4000-8000-000000000001'
+      and created_by_membership_id='a3120000-0000-4000-8000-000000000001'
+      and updated_by_membership_id='a3120000-0000-4000-8000-000000000001'
+  ) then raise exception 'Implementation actor attribution was not database-derived'; end if;
+
+  insert into public.implementation_internal_details (
+    implementation_id,organization_id,technical_scope,operational_scope,internal_notes
+  ) values (
+    'a3300000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001',
+    'Synthetic internal technical scope','Synthetic internal operating scope','Confidential test note'
+  );
+  insert into public.implementation_architectures (
+    implementation_id,organization_id,authentication_method,credential_owner,failure_conditions,
+    retry_behavior,logging_strategy,monitoring_strategy,security_considerations,manual_fallback_procedure
+  ) values (
+    'a3300000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001',
+    'Client-managed OAuth','client','Source unavailable','Retry three times with backoff',
+    'Client-owned n8n execution log','Monitoring not connected','Least-privilege client credential',
+    'Operations completes the existing manual reconciliation'
+  );
+  insert into public.implementation_architecture_items (
+    id,organization_id,implementation_id,category,item_type,name,description,sequence
+  ) values
+    ('a3310000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','input','trigger','Schedule approved','Synthetic trigger',1),
+    ('a3310000-0000-4000-8000-000000000002','a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','processing','validation','Validate schedule','Synthetic validation',2),
+    ('a3310000-0000-4000-8000-000000000003','a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','decision','human_approval','Exception review','Human review remains required',3),
+    ('a3310000-0000-4000-8000-000000000004','a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','output','record','Capacity record','Synthetic output',4);
+  insert into public.implementation_workflows (
+    id,organization_id,implementation_id,process_id,platform,instance_reference,external_workflow_id,
+    workflow_name,purpose,environment,operational_status,monitoring_status
+  ) values
+    ('a3320000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','a3140000-0000-4000-8000-000000000001','n8n','Client test instance','workflow-dev','Schedule synchronization','Synchronize approved schedules','development','in_development','not_connected'),
+    ('a3320000-0000-4000-8000-000000000002','a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','a3140000-0000-4000-8000-000000000001','n8n','Client test instance','workflow-alert','Exception notification','Route exceptions for human review','staging','testing','not_connected');
+  insert into public.implementation_processes (organization_id,implementation_id,process_id,relationship)
+    values ('a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','a3140000-0000-4000-8000-000000000001','Primary process');
+  blocked := false;
+  begin
+    insert into public.implementation_processes (organization_id,implementation_id,process_id,relationship)
+      values ('a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','a3140000-0000-4000-8000-000000000003','Cross-tenant process');
+  exception when others then blocked := true; end;
+  if not blocked then raise exception 'Stage 2 cross-tenant process link succeeded'; end if;
+
+  insert into public.initiative_milestones (
+    id,initiative_id,organization_id,implementation_id,title,description,status,client_visible
+  ) values (
+    'a3330000-0000-4000-8000-000000000001','a3220000-0000-4000-8000-000000000001',
+    'a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001',
+    'Synthetic architecture milestone','Client-safe milestone','Complete',true
+  );
+  insert into public.implementation_acceptance_criteria (
+    id,organization_id,implementation_id,title,expected_behavior,required
+  ) values (
+    'a3340000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001',
+    'a3300000-0000-4000-8000-000000000001','Accurate schedule synchronization',
+    'Approved schedules produce matching capacity records',true
+  );
+  insert into public.implementation_tests (
+    id,organization_id,implementation_id,name,category,expected_behavior,required
+  ) values (
+    'a3350000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001',
+    'a3300000-0000-4000-8000-000000000001','Synthetic required integration test','integration',
+    'One approved schedule creates one capacity record',true
+  );
+  update public.implementation_tests
+    set status='failed',actual_outcome='Duplicate record created',required_remediation='Add idempotency guard'
+    where id='a3350000-0000-4000-8000-000000000001';
+
+  insert into public.decisions (
+    id,organization_id,initiative_id,kind,title,context,why_needed,
+    requested_from_membership_id,requested_by_membership_id,client_visible
+  ) values (
+    'a3360000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001',
+    'a3220000-0000-4000-8000-000000000001','approval','Synthetic client acceptance',
+    'Required tests and acceptance criteria are reviewed','Human acceptance is required before deployment',
+    'a3120000-0000-4000-8000-000000000002','a3120000-0000-4000-8000-000000000001',true
+  );
+  insert into public.decision_options (id,organization_id,decision_id,title,client_visible)
+    values ('a3370000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001',
+      'a3360000-0000-4000-8000-000000000001','Accept implementation for deployment',true);
+  insert into public.approvals (id,organization_id,decision_id,requested_from_membership_id)
+    values ('a3380000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001',
+      'a3360000-0000-4000-8000-000000000001','a3120000-0000-4000-8000-000000000002');
+  update public.implementations
+    set acceptance_decision_id='a3360000-0000-4000-8000-000000000001',status='architecture'
+    where id='a3300000-0000-4000-8000-000000000001';
+  update public.implementations set status='development'
+    where id='a3300000-0000-4000-8000-000000000001';
+  update public.implementations set status='internal_testing'
+    where id='a3300000-0000-4000-8000-000000000001';
+  update public.implementations set status='client_acceptance'
+    where id='a3300000-0000-4000-8000-000000000001';
+  blocked := false;
+  begin
+    update public.implementations set status='ready_for_deployment'
+      where id='a3300000-0000-4000-8000-000000000001';
+  exception when others then blocked := true; end;
+  if not blocked then raise exception 'Failed required test did not block deployment readiness'; end if;
+
+  perform set_config('request.jwt.claim.sub','a3100000-0000-4000-8000-000000000002',true);
+  if not exists (select 1 from public.implementations where id='a3300000-0000-4000-8000-000000000001')
+    or not exists (select 1 from public.initiative_milestones where id='a3330000-0000-4000-8000-000000000001')
+    or exists (select 1 from public.implementation_architectures where implementation_id='a3300000-0000-4000-8000-000000000001')
+    or exists (select 1 from public.implementation_internal_details where implementation_id='a3300000-0000-4000-8000-000000000001')
+    or exists (select 1 from public.implementation_workflows where implementation_id='a3300000-0000-4000-8000-000000000001') then
+    raise exception 'Stage 2 client publication boundary failed'; end if;
+  update public.approvals set status='approved',
+    selected_option_id='a3370000-0000-4000-8000-000000000001'
+    where id='a3380000-0000-4000-8000-000000000001';
+
+  perform set_config('request.jwt.claim.sub','a3100000-0000-4000-8000-000000000001',true);
+  update public.implementation_tests
+    set status='passed',actual_outcome='One matching record created',required_remediation=null,
+      evidence_reference='Synthetic integration evidence'
+    where id='a3350000-0000-4000-8000-000000000001';
+  update public.implementation_acceptance_criteria set review_status='accepted'
+    where id='a3340000-0000-4000-8000-000000000001';
+  update public.implementations set status='ready_for_deployment'
+    where id='a3300000-0000-4000-8000-000000000001';
+  blocked := false;
+  begin
+    update public.implementations set status='deployed'
+      where id='a3300000-0000-4000-8000-000000000001';
+  exception when others then blocked := true; end;
+  if not blocked then raise exception 'Direct deployed transition bypassed deployment record'; end if;
+  insert into public.implementation_deployments (
+    id,organization_id,implementation_id,version,environment,deployed_at,deployed_by_membership_id,
+    acceptance_status,rollback_procedure,operational_owner_membership_id,support_responsibility
+  ) values (
+    'a3390000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001',
+    'a3300000-0000-4000-8000-000000000001','1.0.0','production',now(),
+    'a3120000-0000-4000-8000-000000000003','approved','Disable workflow and resume manual process',
+    'a3120000-0000-4000-8000-000000000002','Client owns infrastructure; Delaro supports workflow logic'
+  );
+  update public.implementations set status='deployed'
+    where id='a3300000-0000-4000-8000-000000000001';
+  blocked := false;
+  begin
+    update public.implementation_deployments set version='rewritten'
+      where id='a3390000-0000-4000-8000-000000000001';
+  exception when others then blocked := true; end;
+  if not blocked then raise exception 'Deployment history remained mutable'; end if;
+  blocked := false;
+  begin
+    update public.implementations set status='monitoring'
+      where id='a3300000-0000-4000-8000-000000000001';
+  exception when others then blocked := true; end;
+  if not blocked then raise exception 'Monitoring began without operational ownership'; end if;
+  update public.implementations
+    set operational_owner_membership_id='a3120000-0000-4000-8000-000000000002',
+      support_responsibility='Client owns infrastructure; Delaro supports workflow logic',status='monitoring'
+    where id='a3300000-0000-4000-8000-000000000001';
+  if not exists (
+    select 1 from public.implementations
+    where id='a3300000-0000-4000-8000-000000000001'
+      and status='monitoring' and monitoring_status='not_connected'
+  ) then raise exception 'Monitoring-not-connected state was not preserved'; end if;
+
   -- Suspending a membership immediately removes tenant reads.
   perform set_config('request.jwt.claim.sub','a3100000-0000-4000-8000-000000000001',true);
   update public.organization_memberships set status='suspended'
@@ -379,4 +551,4 @@ begin
   end if;
 end $$;
 rollback;
-select 'pilot RLS, Stage 1 tenancy, atomic provisioning, relationship, suspension, and approval assertions passed (all fixtures rolled back)' as result;
+select 'pilot RLS, Stage 1 and Stage 2 tenancy, lifecycle, publication, testing, deployment, and monitoring assertions passed (all fixtures rolled back)' as result;
