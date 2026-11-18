@@ -98,7 +98,7 @@ export async function getInternalImplementationWorkspace() {
   const client = await createClient();
   if (!client) throw new Error("The implementation workspace is unavailable.");
   const organizationId = context.organization.id;
-  const [implementations, details, architectures, architectureItems, workflows, milestones, milestoneDetails, tests, criteria, deployments, references, processLinks, systemLinks, metricLinks, initiatives, processes, systems, metrics, decisions, people] = await Promise.all([
+  const [implementations, details, architectures, architectureItems, workflows, milestones, milestoneDetails, tests, criteria, deployments, references, dependencies, processLinks, systemLinks, metricLinks, initiatives, processes, systems, metrics, decisions, people] = await Promise.all([
     tableRows(client, "implementations", "*", organizationId, "updated_at"),
     tableRows(client, "implementation_internal_details", "*", organizationId),
     tableRows(client, "implementation_architectures", "*", organizationId),
@@ -110,6 +110,7 @@ export async function getInternalImplementationWorkspace() {
     tableRows(client, "implementation_acceptance_criteria", "*", organizationId),
     tableRows(client, "implementation_deployments", "*", organizationId, "deployed_at"),
     tableRows(client, "implementation_references", "*", organizationId),
+    tableRows(client, "implementation_dependencies", "*", organizationId),
     tableRows(client, "implementation_processes", "*", organizationId),
     tableRows(client, "implementation_systems", "*", organizationId),
     tableRows(client, "implementation_metrics", "*", organizationId),
@@ -139,6 +140,7 @@ export async function getInternalImplementationWorkspace() {
       acceptanceDecisionId: value(implementation.acceptance_decision_id),
       technicalScope: value(internal?.technical_scope), operationalScope: value(internal?.operational_scope),
       architectureSummary: value(internal?.architecture_summary), blockers: value(internal?.blockers), internalNotes: value(internal?.internal_notes),
+      manualInterventionSummary: value(implementation.manual_intervention_summary),
       clientVisible: bool(implementation.client_visible),
       architecture: architecture ? {
         authenticationMethod: value(architecture.authentication_method), credentialOwner: String(architecture.credential_owner),
@@ -172,6 +174,12 @@ export async function getInternalImplementationWorkspace() {
         id: String(item.id), version: String(item.version), environment: String(item.environment), deployedAt: String(item.deployed_at),
         acceptanceStatus: String(item.acceptance_status), externalReference: value(item.external_reference), knownLimitations: value(item.known_limitations),
         supportResponsibility: String(item.support_responsibility),
+      })),
+      dependencies: dependencies.filter((item) => item.implementation_id === id).map((item) => ({
+        implementationId: String(item.depends_on_implementation_id),
+        name: String(implementations.find((candidate) => candidate.id === item.depends_on_implementation_id)?.name ?? "Implementation"),
+        type: item.dependency_type as InternalImplementation["dependencies"][number]["type"],
+        description: value(item.description),
       })),
       linkedProcessIds: processLinks.filter((item) => item.implementation_id === id).map((item) => String(item.process_id)),
       linkedSystemIds: systemLinks.filter((item) => item.implementation_id === id).map((item) => String(item.system_id)),

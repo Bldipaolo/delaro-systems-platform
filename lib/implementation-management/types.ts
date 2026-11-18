@@ -78,6 +78,7 @@ export type InternalImplementation = ClientImplementation & {
   architectureSummary: string | null;
   blockers: string | null;
   internalNotes: string | null;
+  manualInterventionSummary: string | null;
   clientVisible: boolean;
   architecture: {
     authenticationMethod: string | null;
@@ -140,6 +141,12 @@ export type InternalImplementation = ClientImplementation & {
     externalReference: string | null;
     knownLimitations: string | null;
     supportResponsibility: string;
+  }[];
+  dependencies: {
+    implementationId: string;
+    name: string;
+    type: "finish_to_start" | "start_to_start" | "external" | "informational";
+    description: string | null;
   }[];
   linkedProcessIds: string[];
   linkedSystemIds: string[];

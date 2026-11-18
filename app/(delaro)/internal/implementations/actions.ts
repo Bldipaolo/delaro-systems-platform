@@ -234,6 +234,59 @@ export async function addImplementationMilestone(formData: FormData) {
   refresh();
 }
 
+export async function addImplementationDependency(formData: FormData) {
+  const input = z.object({
+    implementationId: z.string().uuid(),
+    dependsOnImplementationId: z.string().uuid(),
+    dependencyType: z.enum(["finish_to_start", "start_to_start", "external", "informational"]),
+    description: optionalText(2000),
+  }).parse(Object.fromEntries(formData));
+  const { client, organizationId } = await actionContext();
+  await Promise.all([
+    implementationRecord(client, organizationId, input.implementationId),
+    implementationRecord(client, organizationId, input.dependsOnImplementationId),
+  ]);
+  const { error } = await client.from("implementation_dependencies").upsert({
+    organization_id: organizationId,
+    implementation_id: input.implementationId,
+    depends_on_implementation_id: input.dependsOnImplementationId,
+    dependency_type: input.dependencyType,
+    description: input.description,
+  }, { onConflict: "organization_id,implementation_id,depends_on_implementation_id" });
+  if (error) {
+    console.error("Implementation dependency save failed", { code: error.code });
+    throw new Error("Unable to save the implementation dependency.");
+  }
+  refresh();
+}
+
+export async function addImplementationReference(formData: FormData) {
+  const input = z.object({
+    implementationId: z.string().uuid(),
+    title: z.string().trim().min(2).max(180),
+    referenceType: z.enum(["document", "runbook", "diagram", "repository", "external", "other"]),
+    reference: z.string().trim().min(2).max(1000),
+    description: optionalText(2000),
+    clientVisible: z.string().optional(),
+  }).parse(Object.fromEntries(formData));
+  const { client, organizationId } = await actionContext();
+  await implementationRecord(client, organizationId, input.implementationId);
+  const { error } = await client.from("implementation_references").insert({
+    organization_id: organizationId,
+    implementation_id: input.implementationId,
+    title: input.title,
+    reference_type: input.referenceType,
+    reference: input.reference,
+    description: input.description,
+    client_visible: input.clientVisible === "on",
+  });
+  if (error) {
+    console.error("Implementation reference save failed", { code: error.code });
+    throw new Error("Unable to save the implementation reference.");
+  }
+  refresh();
+}
+
 export async function addAcceptanceCriterion(formData: FormData) {
   const input = z.object({
     implementationId: z.string().uuid(), title: z.string().trim().min(3).max(180),
