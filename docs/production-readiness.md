@@ -118,7 +118,7 @@ Stage 3A establishes the authenticated reporting boundary and client monitoring 
 | Realtime event delivery | NOT TESTED | Verified the table is in `supabase_realtime`; built and browser-smoked the subscription and fallback component. | Client subscribes under its authenticated RLS session, falls back to a 60-second refresh, and exposes manual refresh. A real event-driven browser update awaits the actual n8n acceptance run. |
 | Client overview and detail | PASS | Demo-mode browser smoke at `/workflows` and `/workflows/demo-order-sync`. | Overview, freshness, status history, duration, safe failure summary, and drilldown rendered without runtime errors. Demo data was explicitly labeled illustrative. |
 | Internal credential controls | PASS | Demo-mode browser smoke at `/internal/workflows`; live SQL tested the backing actions/RPC rules. | Registered workflows, one-time token creation, rotation, revocation, and credential ledger are present. No n8n login or API key field exists. |
-| Unit suite | PASS | `npm test`. | 37 tests passed, 0 failed. |
+| Unit suite | PASS | `npm test`. | 38 tests passed, 0 failed, including the exact middleware exception required by the credential-authenticated endpoint. |
 | TypeScript | PASS | `npm run typecheck`. | Exit code 0. |
 | Production build | PASS | `npm run build`. | Next.js 15.5.29 compiled 35 routes including ingestion, client Workflows, detail, and internal monitoring. |
 | SQL integration | PASS | Executed `supabase/tests/stage3a_workflow_observability.sql` on project `qxebrulkxkdvovleoqao`. | Ingestion, idempotency, ordering, rate limit, private-record, cross-tenant, and suspension assertions passed; all fixtures rolled back. |

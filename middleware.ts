@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
+import { isUnauthenticatedServerEndpoint } from "@/lib/auth/public-routes";
 
 export async function middleware(request: NextRequest) {
   const config = getSupabasePublicConfig();
@@ -8,6 +9,8 @@ export async function middleware(request: NextRequest) {
   // Only explicitly enabled development demo mode may bypass authentication.
   if (!config) return NextResponse.next();
   if (request.nextUrl.pathname === "/auth/callback") return NextResponse.next();
+  // Machine-to-machine endpoints perform their own scoped authentication.
+  if (isUnauthenticatedServerEndpoint(request.nextUrl.pathname)) return NextResponse.next();
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(config.url, config.key, {

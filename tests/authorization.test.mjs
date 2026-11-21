@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { selectActiveMembership, assertActiveOrganizationId } from "../lib/auth/organization-selection.ts";
 import { canAdministerOrganizations, canViewInternalWorkspace } from "../lib/auth/permissions.ts";
+import { isUnauthenticatedServerEndpoint } from "../lib/auth/public-routes.ts";
 
 const memberships = [
   { organizationId: "client-a", role: "client_admin" },
@@ -33,5 +34,12 @@ test("only Delaro administrators can provision organizations or manage client me
   assert.equal(canAdministerOrganizations("delaro_admin"), true);
   for (const role of ["delaro_consultant", "client_admin", "client_user", "read_only"]) {
     assert.equal(canAdministerOrganizations(role), false);
+  }
+});
+
+test("only the exact credential-authenticated ingestion endpoint bypasses session middleware", () => {
+  assert.equal(isUnauthenticatedServerEndpoint("/api/integrations/n8n/executions"), true);
+  for (const path of ["/api/integrations/n8n", "/api/integrations/n8n/executions/other", "/workflows", "/internal/workflows"]) {
+    assert.equal(isUnauthenticatedServerEndpoint(path), false);
   }
 });
