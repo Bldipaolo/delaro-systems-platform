@@ -8,6 +8,7 @@ import { useMobileNavigation } from "./use-mobile-navigation";
 const navigation = [
   { label: "Home", href: "/overview", icon: OverviewIcon },
   { label: "Operations", href: "/operations", icon: OperationsIcon },
+  { label: "Workflows", href: "/workflows", icon: OperationsIcon },
   { label: "Improvements", href: "/improvements", icon: InitiativeIcon },
   { label: "Impact", href: "/impact", icon: PerformanceIcon },
   { label: "Files", href: "/documents", icon: DocumentIcon },

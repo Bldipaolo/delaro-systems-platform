@@ -533,6 +533,15 @@ begin
       and status='monitoring' and monitoring_status='not_connected'
   ) then raise exception 'Monitoring-not-connected state was not preserved'; end if;
 
+  -- Stage 3A: workflow-scoped credentials are internal and store hashes only.
+  insert into public.workflow_ingestion_credentials (
+    id,organization_id,workflow_id,label,secret_hash,token_hint,created_by_membership_id
+  ) values (
+    'a3400000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001',
+    'a3320000-0000-4000-8000-000000000001','Synthetic n8n reporter',repeat('a',64),'last8key',
+    'a3120000-0000-4000-8000-000000000001'
+  );
+
   -- Suspending a membership immediately removes tenant reads.
   perform set_config('request.jwt.claim.sub','a3100000-0000-4000-8000-000000000001',true);
   update public.organization_memberships set status='suspended'
@@ -543,6 +552,76 @@ begin
     raise exception 'Suspended member retained tenant access'; end if;
 end $$;
 reset role;
+
+do $$
+declare result jsonb; blocked boolean;
+begin
+  -- Invalid credentials are rejected before an execution or audit event is written.
+  blocked := false;
+  begin
+    perform public.ingest_n8n_execution_event(
+      'a3400000-0000-4000-8000-000000000001',repeat('b',64),'bad-event','bad-run',
+      'completed','successful',now(),now(),now(),1,null,null,'n8n_workflow_reporter',repeat('b',64));
+  exception when insufficient_privilege then blocked := true; end;
+  if not blocked or exists(select 1 from public.workflow_executions where external_execution_id='bad-run') then
+    raise exception 'Invalid workflow credential was accepted'; end if;
+
+  select public.ingest_n8n_execution_event(
+    'a3400000-0000-4000-8000-000000000001',repeat('a',64),'event-success','run-success',
+    'completed','successful',now(),now()-interval '2 seconds',now(),2000,null,null,
+    'n8n_workflow_reporter',repeat('c',64)) into result;
+  if result->>'duplicate' <> 'false' then raise exception 'First workflow event was treated as duplicate'; end if;
+
+  select public.ingest_n8n_execution_event(
+    'a3400000-0000-4000-8000-000000000001',repeat('a',64),'event-success','run-success',
+    'completed','successful',now(),now()-interval '2 seconds',now(),2000,null,null,
+    'n8n_workflow_reporter',repeat('c',64)) into result;
+  if result->>'duplicate' <> 'true' or (select count(*) from public.workflow_execution_events where external_event_id='event-success') <> 1 then
+    raise exception 'Workflow event idempotency failed'; end if;
+
+  -- A late start event is retained for audit but cannot regress a terminal state.
+  perform public.ingest_n8n_execution_event(
+    'a3400000-0000-4000-8000-000000000001',repeat('a',64),'event-start-late','run-success',
+    'started','running',now()+interval '1 second',now()-interval '2 seconds',null,null,null,null,
+    'n8n_workflow_reporter',repeat('d',64));
+  if (select status from public.workflow_executions where external_execution_id='run-success') <> 'successful' then
+    raise exception 'Out-of-order event regressed terminal workflow state'; end if;
+
+  perform public.ingest_n8n_execution_event(
+    'a3400000-0000-4000-8000-000000000001',repeat('a',64),'event-failure','run-failure',
+    'failed','failed',now(),now()-interval '3 seconds',now(),3000,'SOURCE_TIMEOUT',
+    'Source system did not respond before the configured timeout.','n8n_error_trigger',repeat('e',64));
+  if not exists(select 1 from public.workflow_executions where external_execution_id='run-failure' and status='failed') then
+    raise exception 'Failed workflow execution was not recorded'; end if;
+end $$;
+
+set local role authenticated;
+do $$
+declare affected integer; blocked boolean;
+begin
+  perform set_config('request.jwt.claim.sub','a3100000-0000-4000-8000-000000000002',true);
+  if (select count(*) from public.workflow_executions where workflow_id='a3320000-0000-4000-8000-000000000001') <> 2 then
+    raise exception 'Authorized client cannot read published workflow executions'; end if;
+  if exists(select 1 from public.workflow_execution_events) or exists(select 1 from public.workflow_ingestion_credentials) then
+    raise exception 'Client can read private workflow event or credential records'; end if;
+  blocked := false;
+  begin
+    insert into public.workflow_executions (
+      organization_id,workflow_id,external_execution_id,status,monitoring_source,first_event_at,last_event_at
+    ) values (
+      'a3110000-0000-4000-8000-000000000001','a3320000-0000-4000-8000-000000000001',
+      'client-forged','successful','n8n_workflow_reporter',now(),now());
+  exception when others then blocked := true; end;
+  if not blocked then raise exception 'Client directly inserted a workflow execution'; end if;
+
+  perform set_config('request.jwt.claim.sub','a3100000-0000-4000-8000-000000000003',true);
+  if exists(select 1 from public.workflow_executions where workflow_id='a3320000-0000-4000-8000-000000000001') then
+    raise exception 'Cross-tenant workflow execution read succeeded'; end if;
+  update public.workflow_executions set status='successful' where external_execution_id='run-failure';
+  get diagnostics affected = row_count;
+  if affected <> 0 then raise exception 'Cross-tenant workflow execution write succeeded'; end if;
+end $$;
+reset role;
 do $$
 begin
   if exists (select 1 from public.organizations
@@ -551,4 +630,4 @@ begin
   end if;
 end $$;
 rollback;
-select 'pilot RLS, Stage 1 and Stage 2 tenancy, lifecycle, publication, testing, deployment, and monitoring assertions passed (all fixtures rolled back)' as result;
+select 'pilot RLS, Stage 1, Stage 2, and Stage 3A workflow ingestion, idempotency, ordering, and tenancy assertions passed (all fixtures rolled back)' as result;

@@ -99,3 +99,36 @@ Applied Stage 2 migrations:
 - `stage2_foreign_key_indexes`
 
 Post-migration Supabase security and health advisors reported no new schema finding. Leaked-password protection remains the existing Auth release blocker. Performance advisories still include legacy policy/index recommendations; the foreign-key paths introduced by Stage 2 received focused covering indexes.
+
+## Stage 3A live n8n observability — 21 November 2026
+
+Stage 3A establishes the authenticated reporting boundary and client monitoring interface. It does not claim a completed n8n end-to-end connection until a real client-owned workflow reports both a production success and an Error Trigger failure.
+
+| Journey or control | Result | Actual test method | Evidence / limitation |
+| --- | --- | --- | --- |
+| Workflow-scoped credential creation and rotation | PASS | Live rollback SQL called the authenticated rotation RPC as a Delaro internal role. | Plaintext token is returned only by the server action; the database stores a SHA-256 hash and short hint. Rotation revokes the prior credential transactionally. |
+| Invalid credential rejection | PASS | Live rollback SQL called the service-role-only ingestion RPC with the wrong hash. | PostgreSQL returned `42501`; no execution or event row was written. |
+| Success and failure ingestion | PASS | Live rollback SQL submitted one successful reporter event and one Error Trigger failure event. | Two current execution rows and three immutable event rows were asserted; all fixtures rolled back. These were simulated protocol events, not actual n8n runs. |
+| Idempotency | PASS | Replayed the same workflow/event identifier through the ingestion RPC. | Response marked the replay as duplicate and the event count remained one. |
+| Out-of-order safety | PASS | Sent a late `started/running` event after a terminal success. | The audit event was retained and the current execution remained `successful`. |
+| Rate limiting | PASS | Set the test credential to four requests per minute and attempted a fifth request. | PostgreSQL raised `program_limit_exceeded`; no fifth execution was written. |
+| Payload and error minimization | PASS | Node protocol tests and code inspection. | Strict 32 KB JSON schema rejects unknown fields; common credentials, email addresses, and secret query parameters are redacted from the 500-character error summary. Raw workflow payloads are not stored. |
+| Client execution visibility | PASS | Live rollback SQL queried as an active client admin on the published implementation. | Client read two safe execution records and one safe workflow projection, but zero credential or raw event-audit rows. |
+| Cross-tenant and suspended access | PASS | Live rollback SQL changed JWT subjects to a second tenant and suspended user. | Both received zero workflow execution rows; direct client insert was denied. |
+| Realtime event delivery | NOT TESTED | Verified the table is in `supabase_realtime`; built and browser-smoked the subscription and fallback component. | Client subscribes under its authenticated RLS session, falls back to a 60-second refresh, and exposes manual refresh. A real event-driven browser update awaits the actual n8n acceptance run. |
+| Client overview and detail | PASS | Demo-mode browser smoke at `/workflows` and `/workflows/demo-order-sync`. | Overview, freshness, status history, duration, safe failure summary, and drilldown rendered without runtime errors. Demo data was explicitly labeled illustrative. |
+| Internal credential controls | PASS | Demo-mode browser smoke at `/internal/workflows`; live SQL tested the backing actions/RPC rules. | Registered workflows, one-time token creation, rotation, revocation, and credential ledger are present. No n8n login or API key field exists. |
+| Unit suite | PASS | `npm test`. | 37 tests passed, 0 failed. |
+| TypeScript | PASS | `npm run typecheck`. | Exit code 0. |
+| Production build | PASS | `npm run build`. | Next.js 15.5.29 compiled 35 routes including ingestion, client Workflows, detail, and internal monitoring. |
+| SQL integration | PASS | Executed `supabase/tests/stage3a_workflow_observability.sql` on project `qxebrulkxkdvovleoqao`. | Ingestion, idempotency, ordering, rate limit, private-record, cross-tenant, and suspension assertions passed; all fixtures rolled back. |
+| Actual n8n success | NOT TESTED | No client-owned n8n instance or workflow was available in this session. | Follow `docs/integrations/n8n-observability.md` and run a published test workflow. This is a Definition-of-Done blocker. |
+| Actual n8n Error Trigger failure | NOT TESTED | No published n8n Error Trigger workflow was available. | Trigger one controlled production failure. Manual n8n executions do not activate Error Trigger. This is a Definition-of-Done blocker. |
+
+Applied Stage 3A migrations:
+
+- `stage3a_live_n8n_observability`
+- `stage3a_advisor_hardening`
+- `stage3a_execution_policy_hardening`
+
+The post-migration Supabase security advisor reports one intentional warning for the client-safe `get_client_workflow_monitoring` `SECURITY DEFINER` RPC. It is executable only by authenticated users, verifies active organization membership internally, returns an explicit safe column projection, and does not expose instance references, external workflow IDs, credential data, or raw event records. Leaked-password protection remains a separate pre-existing Auth blocker.
