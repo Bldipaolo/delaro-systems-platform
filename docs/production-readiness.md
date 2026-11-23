@@ -132,3 +132,28 @@ Applied Stage 3A migrations:
 - `stage3a_execution_policy_hardening`
 
 The post-migration Supabase security advisor reports one intentional warning for the client-safe `get_client_workflow_monitoring` `SECURITY DEFINER` RPC. It is executable only by authenticated users, verifies active organization membership internally, returns an explicit safe column projection, and does not expose instance references, external workflow IDs, credential data, or raw event records. Leaked-password protection remains a separate pre-existing Auth blocker.
+
+## Stage 3B simplified workflow onboarding — 23 November 2026
+
+Stage 3B removes the implementation prerequisite from workflow monitoring without creating a second ingestion path. Existing implementation-linked workflows remain in `implementation_workflows`; the implementation relationship is now optional, and direct registrations use the same scoped credentials, event tables, client projection, and monitoring UI.
+
+| Control | Result | Actual verification | Remaining blocker |
+| --- | --- | --- | --- |
+| Direct client registration | PASS | Applied `simplify_n8n_workflow_onboarding`; rollback SQL called `register_monitored_workflow` with no implementation and asserted the workflow plus credential were created atomically. | None in schema/action path. |
+| Tenant and role enforcement | PASS | SQL changed JWT subjects across two organizations. A foreign internal user could not register in tenant A; tenant B client received no tenant A workflow or executions. | Browser role smoke still required after deployment. |
+| Credential storage | PASS | SQL asserted the credential row contains only a SHA-256 digest and token hint. Client roles read zero credential rows. | Plaintext token must be copied once into the client-owned n8n credential store. |
+| Evidence-derived status | PASS | Direct `connected` update before telemetry raised `check_violation`; authenticated success changed the workflow to connected and a newer authenticated failure changed it to degraded. | Stale remains time-derived in the application and needs a live elapsed-time acceptance check. |
+| Existing linked workflows | PASS | The Stage 3B SQL suite inserted an implementation-linked workflow and verified the client projection returned it alongside the standalone workflow. The Stage 3A SQL suite also passed after migration. | None found. |
+| Client-safe visibility | PASS | Standalone published workflow and execution rows were visible only through the client-safe projection/RLS. Instance URL, external ID, credentials, and raw event audit remained internal. | None found. |
+| Unit and TypeScript checks | PASS | `npm test` passed 40/40, including workflow parser, state, credential, payload, and mobile checks; `npm run typecheck` exited 0. | None. |
+| Production build | PASS | A clean lockfile install followed by `npm run build`; Next.js 15.5.29 compiled all 35 routes, including internal onboarding and ingestion. | None. |
+| Regression SQL | PASS | `pilot_rls.sql`, `stage3a_workflow_observability.sql`, and `stage3b_workflow_onboarding.sql` all passed against the connected project with fixtures rolled back. | None. |
+| Atlantic Operations Group readiness | PASS | Live read-only query confirmed the active organization and one active internal membership. | A real workflow URL/ID and n8n access are required from the operator. |
+| Genuine n8n Cloud execution | NOT TESTED | No n8n Cloud workflow or execution credential was available in this session. | Required before claiming end-to-end connectivity. |
+
+Applied Stage 3B migration:
+
+- `simplify_n8n_workflow_onboarding`
+- `allow_service_telemetry_updates`
+
+The post-migration advisor found no new health or security finding. The existing client-safe `get_client_workflow_monitoring` warning and disabled leaked-password protection remain as documented above. Performance advice remains limited to pre-existing policy/index recommendations plus expected unused-index notices on newly created test-age indexes.

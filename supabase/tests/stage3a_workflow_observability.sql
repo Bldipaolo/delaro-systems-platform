@@ -42,11 +42,11 @@ insert into public.implementations (
 );
 insert into public.implementation_workflows (
   id,organization_id,implementation_id,platform,instance_reference,external_workflow_id,
-  workflow_name,purpose,environment,operational_status,monitoring_status
+  workflow_name,purpose,environment,operational_status,monitoring_status,client_visible
 ) values (
   'b3460000-0000-4000-8000-000000000001','b3410000-0000-4000-8000-000000000001',
   'b3450000-0000-4000-8000-000000000001','n8n','Disposable test instance','stage3a-test-workflow',
-  'Stage 3A execution test','Verify authenticated event reporting','staging','active','configured'
+  'Stage 3A execution test','Verify authenticated event reporting','staging','active','configured',true
 );
 
 select public.rotate_workflow_ingestion_credential(
@@ -54,6 +54,8 @@ select public.rotate_workflow_ingestion_credential(
   repeat('a',64),'testhint','Stage 3A SQL reporter',4,null
 );
 reset role;
+select set_config('request.jwt.claim.role','service_role',true);
+select set_config('request.jwt.claim.sub','',true);
 
 do $$
 declare result jsonb; blocked boolean;
@@ -101,9 +103,17 @@ begin
       'completed','successful',now(),now(),now(),1,null,null,'n8n_workflow_reporter',repeat('f',64));
   exception when program_limit_exceeded then blocked := true; end;
   if not blocked then raise exception 'Credential rate limit was not enforced'; end if;
+
+  blocked := false;
+  begin
+    update public.implementations set name='Service role attempted lifecycle edit'
+      where id='b3450000-0000-4000-8000-000000000001';
+  exception when others then blocked := true; end;
+  if not blocked then raise exception 'Service telemetry bypass allowed a non-telemetry implementation update'; end if;
 end $$;
 
 set local role authenticated;
+select set_config('request.jwt.claim.role','authenticated',true);
 do $$
 declare blocked boolean;
 begin

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { connectionState, durationLabel } from "../lib/workflow-observability/types.ts";
 import { createIntegrationToken, maxWorkflowEventBytes, parseIntegrationToken, sanitizeErrorSummary, workflowEventSchema } from "../lib/workflow-observability/protocol.ts";
+import { parseWorkflowReference } from "../lib/workflow-observability/registration.ts";
 
 test("workflow integration tokens are parseable but do not reveal their stored hash", () => {
   const generated = createIntegrationToken();
@@ -26,7 +27,35 @@ test("freshness never implies connectivity without a recent authenticated event"
   assert.equal(connectionState("connected", "2026-11-21T11:55:00Z", now), "connected");
   assert.equal(connectionState("connected", "2026-11-19T10:00:00Z", now), "stale");
   assert.equal(connectionState("configured", "2026-11-21T11:55:00Z", now), "disconnected");
+  assert.equal(connectionState("degraded", "2026-11-21T11:55:00Z", now), "degraded");
+  assert.equal(connectionState("degraded", "2026-11-19T10:00:00Z", now), "stale");
   assert.equal(connectionState("disabled", "2026-11-21T11:55:00Z", now), "disabled");
+});
+
+test("n8n registration accepts IDs and safe workflow URLs without retaining URL secrets", () => {
+  assert.deepEqual(parseWorkflowReference("n8n_cloud", "cloud-workflow_12"), {
+    externalWorkflowId: "cloud-workflow_12", instanceReference: "n8n Cloud", workflowUrl: null,
+  });
+  assert.deepEqual(parseWorkflowReference("n8n_cloud", "https://delaro.app.n8n.cloud/workflow/abc_123?view=1#node"), {
+    externalWorkflowId: "abc_123", instanceReference: "delaro.app.n8n.cloud", workflowUrl: "https://delaro.app.n8n.cloud/workflow/abc_123",
+  });
+  assert.deepEqual(parseWorkflowReference("n8n_self_hosted", "https://automation.example.com/workflow/run-9"), {
+    externalWorkflowId: "run-9", instanceReference: "automation.example.com", workflowUrl: "https://automation.example.com/workflow/run-9",
+  });
+  for (const invalid of [
+    ["n8n_cloud", "http://delaro.app.n8n.cloud/workflow/abc"],
+    ["n8n_cloud", "https://user:secret@delaro.app.n8n.cloud/workflow/abc"],
+    ["n8n_cloud", "https://example.com/workflow/abc"],
+    ["n8n_self_hosted", "workflow-id-only"],
+  ]) assert.throws(() => parseWorkflowReference(invalid[0], invalid[1]));
+});
+
+test("workflow onboarding remains usable on narrow screens", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(css, /\.workflow-connect-panel \{ display: grid;/);
+  assert.match(css, /\.workflow-organization-bar, \.workflow-connect-panel \{ grid-template-columns: 1fr;/);
+  assert.match(css, /\.workflow-instructions li \{ grid-template-columns: 1fr; display: grid;/);
 });
 
 test("plain-language errors redact common credential and identity material", () => {

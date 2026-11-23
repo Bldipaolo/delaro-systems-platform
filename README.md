@@ -62,7 +62,7 @@ NEXT_PUBLIC_DELARO_DEMO_MODE=
 - `lib/auth/` — role and permission helpers.
 - `lib/validation/` — input schemas.
 - `supabase/migrations/` — ordered database foundation, tenant/RLS, operational model, measurement, economic-impact, approval, publication, and private-document migrations.
-- `supabase/tests/pilot_rls.sql` — rollback-only multi-tenant/role integration assertions; run with a privileged test SQL connection.
+- `supabase/tests/` — rollback-only multi-tenant, role, implementation, and workflow-observability assertions; run with a privileged test SQL connection.
 - `docs/` — architecture notes.
 - `outputs/delaro-client-demo.html` — self-contained offline client demo.
 
@@ -76,7 +76,7 @@ The server layout for `app/(delaro)/` checks the resolved membership role before
 
 Server-side data access is implemented through `lib/supabase/server.ts`, `lib/auth/context.ts`, and the `lib/data/` loaders. `getCurrentUserContext()` resolves the authenticated Supabase user, profile, active memberships, validated active organization, and role on the server. A single active organization is selected automatically; for multi-organization users, the `delaro_active_organization` cookie is treated only as a preference and is accepted only when it matches an active membership. Server loaders and actions apply organization checks before querying or writing, while Supabase RLS remains the final enforcement layer. The data functions fall back to demo data only when Supabase is not configured. Apply the SQL files in `supabase/migrations/` to create the database foundation, organizations, memberships, opportunities, initiatives, and related policies.
 
-The first n8n reporting workflow is documented in [`docs/integrations/n8n-observability.md`](docs/integrations/n8n-observability.md). Reporter tokens are generated for one registered workflow, stored only as hashes, and should be kept in the client-owned n8n credential store.
+The n8n reporting workflow is documented in [`docs/integrations/n8n-observability.md`](docs/integrations/n8n-observability.md). Internal users can register an existing workflow directly under an authorized client without first creating an implementation. Reporter tokens are scoped to one workflow, stored only as hashes, and should be kept in the client-owned n8n credential store.
 
 ## Client and tenant separation
 
@@ -86,11 +86,11 @@ Client files use a private `client-documents` Storage bucket and `client_documen
 
 ## Known unfinished areas
 
-- A Delaro admin user and organization exist in the connected project, but no real client organization, client login, file, metric, or verified result has yet been exercised through the deployed browser workflow. Use [the pilot runbook](docs/pilot-runbook.md) before inviting a client.
+- Atlantic Operations Group and Delaro Systems exist in the connected project with active internal memberships. A genuine n8n Cloud execution has not yet been observed, so no workflow connection should be treated as end-to-end verified. Use [the n8n acceptance run](docs/integrations/n8n-observability.md#acceptance-run) before relying on live monitoring.
 - Supabase Auth's leaked-password protection is disabled in the connected project's advisor report and must be enabled in the Dashboard before launch.
 - Auth recovery, email deliverability, and sign-out persistence still need real-browser acceptance testing with a test account. The code path and unit checks do not prove SMTP delivery.
 - Uploaded documents have type/size restrictions and private access, but no malware scanning, DLP, retention schedule, or automated orphan-object cleanup yet. Do not use for sensitive regulated files until those policies are agreed.
 - Stage 1 internal authoring covers client onboarding, member lifecycle, teams, people, process/step/system/data relationships, handoffs, dependencies, constraints, opportunities, improvement scope, and decision requests. Real-client browser acceptance is still required before relying on the workflow for a live engagement.
-- Stage 2 records architecture, external n8n metadata, milestones, tests, acceptance, immutable deployments, and monitoring readiness. It does not connect to n8n or infer execution health; authenticated event ingestion remains Stage 3 work. See [implementation management](docs/implementation-management.md).
+- Stage 2 keeps the formal implementation lifecycle for complex consulting work. Existing n8n workflows can also be registered independently in Workflow monitoring; connected and degraded states are derived only from authenticated execution telemetry. See [implementation management](docs/implementation-management.md).
 - The Northstar demo and offline HTML export remain illustrative only. No production result is auto-populated from demo data.
 - See [production-readiness](docs/production-readiness.md) for tested controls and remaining release blockers.

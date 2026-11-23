@@ -1,25 +1,27 @@
 # n8n execution observability
 
-Stage 3A accepts small, authenticated outcome events from explicitly registered n8n workflows. It does not connect to the n8n API, store n8n login credentials, or retain workflow inputs and outputs.
+Delaro accepts small, authenticated outcome events from explicitly registered n8n workflows. A workflow can be registered directly for a client or linked to a formal consulting implementation. Delaro does not connect to the n8n API, store n8n login credentials, or retain workflow inputs and outputs.
 
 ## Security model
 
-- A Delaro internal user registers the n8n workflow under an approved implementation.
-- `/internal/workflows` creates a workflow-scoped reporter token. Only its SHA-256 hash is stored; the plaintext token is shown once.
+- A Delaro internal user selects an authorized client organization and registers the n8n workflow in **Internal → Workflow monitoring**. An implementation is optional.
+- Registration creates a workflow-scoped reporter token in the same database transaction. Only its SHA-256 hash is stored; the plaintext token is shown once.
 - The token resolves the organization and workflow on the server. The request body has no organization or workflow identifier to trust.
-- Rotation creates a new token and revokes the prior token in one database transaction. Revocation is immediate.
+- Rotation creates a new token and revokes the prior token in one database transaction. Revocation is immediate. No client n8n login or API credential is collected.
+- PostgreSQL rejects `connected` or `degraded` status without matching authenticated execution evidence. `stale` is derived from the last received event.
 - Events are limited to 32 KB and a configurable per-credential request limit. Unknown JSON fields are rejected.
 - Only identifiers, timing, status, source, and a sanitized error code/summary are retained. Never send customer records, credentials, node inputs, node outputs, stack traces, or complete n8n execution payloads.
 
 ## Connect the first workflow
 
-1. In Delaro, register the workflow under **Internal workspace → Implementations → Workflows and integrations**. Use the real n8n workflow ID and a non-secret instance label.
-2. Open **Internal workspace → Workflow monitoring** and create the reporter credential. Copy the token immediately.
-3. In the client-owned n8n instance, create a reusable **Header Auth** credential:
+1. Open **Internal workspace → Workflow monitoring**, select the client organization, and choose **Connect workflow**.
+2. Select n8n Cloud or self-hosted n8n, enter the workflow name and its credential-free HTTPS URL or n8n Cloud workflow ID, then choose **Register and generate credential**. Process, implementation, owner, description, and metric links are optional and can be added later.
+3. Copy the reporter token immediately. The record is `configured`, not connected, until the first authenticated execution arrives.
+4. In the client-owned n8n instance, create a reusable **Header Auth** credential:
    - Name: `Delaro execution reporter`
    - Header: `Authorization`
    - Value: `Bearer <one-time Delaro token>`
-4. Add an **HTTP Request** node as the final node of a dedicated test workflow:
+5. Add an **HTTP Request** node as the final node of a dedicated test workflow:
    - Method: `POST`
    - URL: `https://delaro-systems-platform.vercel.app/api/integrations/n8n/executions`
    - Authentication: the Header Auth credential above
@@ -37,8 +39,8 @@ Stage 3A accepts small, authenticated outcome events from explicitly registered 
 }
 ```
 
-5. Run the workflow once and confirm a `202` response. Replaying the same `eventId` returns `200` with `duplicate: true` and does not add another event.
-6. Confirm the execution appears in the correct client’s **Workflows** page. A successful HTTP response proves event receipt, not the business outcome of the workflow.
+6. Run the workflow once and confirm a `202` response. Replaying the same `eventId` returns `200` with `duplicate: true` and does not add another event.
+7. Confirm the internal record becomes connected and the execution appears in the correct client’s **Workflows** page. A successful HTTP response proves event receipt, not the business outcome of the workflow.
 
 ## Capture failures
 
@@ -71,7 +73,7 @@ Use the same workflow-scoped Delaro credential only for the registered workflow.
 
 ## Acceptance run
 
-Use a non-production organization and dedicated n8n workflow.
+Use a non-production workflow and, when possible, a dedicated test organization. `Atlantic Operations Group` is available in the connected pilot project, but do not mark its workflow connected until a genuine n8n Cloud execution has been observed.
 
 1. Trigger one successful production execution and record the n8n execution ID.
 2. Trigger one controlled failure that activates the published Error Trigger workflow.

@@ -18,9 +18,9 @@ export type WorkflowExecution = {
 
 export type ClientWorkflow = {
   id: string;
-  implementationId: string;
+  implementationId: string | null;
   name: string;
-  purpose: string;
+  purpose: string | null;
   environment: string;
   operationalStatus: string;
   monitoringStatus: string;
@@ -36,7 +36,7 @@ export type ClientWorkflow = {
   demo: boolean;
 };
 
-export type ConnectionState = "connected" | "stale" | "disconnected" | "disabled";
+export type ConnectionState = "connected" | "degraded" | "stale" | "disconnected" | "disabled";
 
 export function connectionState(
   monitoringStatus: string,
@@ -48,6 +48,7 @@ export function connectionState(
   if (monitoringStatus === "not_connected" || monitoringStatus === "configured" || !lastReportedAt) return "disconnected";
   const reported = Date.parse(lastReportedAt);
   if (!Number.isFinite(reported) || now - reported > staleAfterMs) return "stale";
+  if (monitoringStatus === "degraded") return "degraded";
   return "connected";
 }
 

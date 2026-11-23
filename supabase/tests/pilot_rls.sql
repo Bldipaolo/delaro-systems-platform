@@ -405,10 +405,10 @@ begin
     ('a3310000-0000-4000-8000-000000000004','a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','output','record','Capacity record','Synthetic output',4);
   insert into public.implementation_workflows (
     id,organization_id,implementation_id,process_id,platform,instance_reference,external_workflow_id,
-    workflow_name,purpose,environment,operational_status,monitoring_status
+    workflow_name,purpose,environment,operational_status,monitoring_status,client_visible
   ) values
-    ('a3320000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','a3140000-0000-4000-8000-000000000001','n8n','Client test instance','workflow-dev','Schedule synchronization','Synchronize approved schedules','development','in_development','not_connected'),
-    ('a3320000-0000-4000-8000-000000000002','a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','a3140000-0000-4000-8000-000000000001','n8n','Client test instance','workflow-alert','Exception notification','Route exceptions for human review','staging','testing','not_connected');
+    ('a3320000-0000-4000-8000-000000000001','a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','a3140000-0000-4000-8000-000000000001','n8n','Client test instance','workflow-dev','Schedule synchronization','Synchronize approved schedules','development','in_development','not_connected',true),
+    ('a3320000-0000-4000-8000-000000000002','a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','a3140000-0000-4000-8000-000000000001','n8n','Client test instance','workflow-alert','Exception notification','Route exceptions for human review','staging','testing','not_connected',true);
   insert into public.implementation_processes (organization_id,implementation_id,process_id,relationship)
     values ('a3110000-0000-4000-8000-000000000001','a3300000-0000-4000-8000-000000000001','a3140000-0000-4000-8000-000000000001','Primary process');
   blocked := false;
@@ -552,6 +552,8 @@ begin
     raise exception 'Suspended member retained tenant access'; end if;
 end $$;
 reset role;
+select set_config('request.jwt.claim.role','service_role',true);
+select set_config('request.jwt.claim.sub','',true);
 
 do $$
 declare result jsonb; blocked boolean;
@@ -596,6 +598,7 @@ begin
 end $$;
 
 set local role authenticated;
+select set_config('request.jwt.claim.role','authenticated',true);
 do $$
 declare affected integer; blocked boolean;
 begin
@@ -617,9 +620,12 @@ begin
   perform set_config('request.jwt.claim.sub','a3100000-0000-4000-8000-000000000003',true);
   if exists(select 1 from public.workflow_executions where workflow_id='a3320000-0000-4000-8000-000000000001') then
     raise exception 'Cross-tenant workflow execution read succeeded'; end if;
-  update public.workflow_executions set status='successful' where external_execution_id='run-failure';
-  get diagnostics affected = row_count;
-  if affected <> 0 then raise exception 'Cross-tenant workflow execution write succeeded'; end if;
+  blocked := false;
+  begin
+    update public.workflow_executions set status='successful' where external_execution_id='run-failure';
+    get diagnostics affected = row_count;
+  exception when insufficient_privilege then blocked := true; end;
+  if not blocked and affected <> 0 then raise exception 'Cross-tenant workflow execution write succeeded'; end if;
 end $$;
 reset role;
 do $$

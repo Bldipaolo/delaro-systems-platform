@@ -23,7 +23,7 @@ async function actionContext() {
 
 async function implementationRecord(client: Client, organizationId: string, implementationId: string) {
   const { data, error } = await client.from("implementations")
-    .select("id,initiative_id,status,status_before_pause")
+    .select("id,initiative_id,status,status_before_pause,client_visible")
     .eq("organization_id", organizationId).eq("id", implementationId).maybeSingle();
   if (error || !data) throw new Error("Implementation does not belong to the active organization.");
   return data;
@@ -190,10 +190,10 @@ export async function registerWorkflow(formData: FormData) {
     workflowId: z.string().trim().min(1).max(180), workflowName: z.string().trim().min(2).max(180),
     purpose: z.string().trim().min(5).max(2000), environment: z.enum(["development","staging","production","other"]),
     operationalStatus: z.enum(["documented","in_development","testing","active","paused","failed","retired"]),
-    ownerMembershipId: optionalUuid, monitoringStatus: z.enum(["not_connected","configured","connected","degraded","disabled"]),
+    ownerMembershipId: optionalUuid, monitoringStatus: z.enum(["not_connected","configured","disabled"]),
   }).parse(Object.fromEntries(formData));
   const { client, organizationId } = await actionContext();
-  await Promise.all([
+  const [implementation] = await Promise.all([
     implementationRecord(client, organizationId, input.implementationId),
     assertReference(client, "processes", organizationId, input.processId),
     assertMembership(client, organizationId, input.ownerMembershipId),
@@ -202,7 +202,8 @@ export async function registerWorkflow(formData: FormData) {
     organization_id: organizationId, implementation_id: input.implementationId, process_id: input.processId,
     platform: input.platform, instance_reference: input.instanceReference, external_workflow_id: input.workflowId,
     workflow_name: input.workflowName, purpose: input.purpose, environment: input.environment,
-    operational_status: input.operationalStatus, owner_membership_id: input.ownerMembershipId, monitoring_status: input.monitoringStatus,
+    operational_status: input.operationalStatus, owner_membership_id: input.ownerMembershipId,
+    monitoring_status: input.monitoringStatus, client_visible: implementation.client_visible,
   });
   if (error) { console.error("Workflow registry insert failed", { code: error.code }); throw new Error("Unable to register the external workflow metadata."); }
   refresh();

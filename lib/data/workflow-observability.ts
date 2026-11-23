@@ -1,9 +1,32 @@
 import { isSupabaseConfigured, requireCurrentUserContext, requireInternalUserContext } from "@/lib/auth/context";
+import { canViewInternalWorkspace } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import type { ClientWorkflow, ExecutionStatus, WorkflowExecution } from "@/lib/workflow-observability/types";
 
 type Row = Record<string, unknown>;
-export type InternalWorkflow = ClientWorkflow & { instanceReference: string; externalWorkflowId: string; platform: string };
+export type InternalWorkflow = ClientWorkflow & {
+  instanceReference: string;
+  externalWorkflowId: string;
+  platform: string;
+  workflowUrl: string | null;
+  registrationSource: string;
+  processId: string | null;
+  ownerMembershipId: string | null;
+  metricId: string | null;
+  clientVisible: boolean;
+};
+
+export type InternalWorkflowWorkspace = {
+  organizationId: string;
+  organizationName: string;
+  organizations: { id: string; name: string }[];
+  workflows: InternalWorkflow[];
+  credentials: Row[];
+  processes: { id: string; name: string }[];
+  implementations: { id: string; name: string }[];
+  metrics: { id: string; name: string }[];
+  members: { id: string; name: string }[];
+};
 
 function text(value: unknown) { return typeof value === "string" ? value : null; }
 function number(value: unknown) { return value === null || value === undefined ? null : Number(value); }
@@ -47,8 +70,8 @@ export async function getClientWorkflows(): Promise<ClientWorkflow[]> {
     executionRows = (data ?? []) as unknown as Row[];
   }
   return ((workflowRows ?? []) as Row[]).map((row) => ({
-    id: String(row.workflow_id), implementationId: String(row.implementation_id), name: String(row.workflow_name),
-    purpose: String(row.purpose), environment: String(row.environment), operationalStatus: String(row.operational_status),
+    id: String(row.workflow_id), implementationId: text(row.implementation_id), name: String(row.workflow_name),
+    purpose: text(row.purpose), environment: String(row.environment), operationalStatus: String(row.operational_status),
     monitoringStatus: String(row.monitoring_status), lastSuccessAt: text(row.last_successful_execution_at),
     lastFailureAt: text(row.last_failure_at), lastReportedAt: text(row.last_reported_at),
     lastExecutionStatus: text(row.last_execution_status) as ExecutionStatus | null,
@@ -62,24 +85,61 @@ export async function getClientWorkflow(workflowId: string) {
   return (await getClientWorkflows()).find((workflow) => workflow.id === workflowId) ?? null;
 }
 
-export async function getInternalWorkflowMonitoring(): Promise<{ organizationName: string; workflows: InternalWorkflow[]; credentials: Row[] }> {
+export async function getInternalWorkflowMonitoring(requestedOrganizationId?: string): Promise<InternalWorkflowWorkspace> {
   const context = await requireInternalUserContext();
-  if (!context) return { organizationName: "Northstar Manufacturing", workflows: demoWorkflows().map((workflow) => ({ ...workflow, instanceReference: "Demo n8n instance", externalWorkflowId: "demo-workflow", platform: "n8n" })), credentials: [] };
+  if (!context) return {
+    organizationId: "demo-northstar", organizationName: "Northstar Manufacturing",
+    organizations: [{ id: "demo-northstar", name: "Northstar Manufacturing" }],
+    workflows: demoWorkflows().map((workflow) => ({ ...workflow, instanceReference: "Demo n8n instance", externalWorkflowId: "demo-workflow", platform: "n8n_cloud", workflowUrl: null, registrationSource: "direct", processId: null, ownerMembershipId: null, metricId: null, clientVisible: true })),
+    credentials: [], processes: [], implementations: [], metrics: [], members: [],
+  };
   const client = await createClient();
   if (!client) throw new Error("Workflow monitoring is unavailable.");
-  const [workflowResult, credentialResult, executionResult] = await Promise.all([
-    client.from("implementation_workflows").select("id,implementation_id,workflow_name,purpose,platform,environment,operational_status,monitoring_status,last_successful_execution_at,last_failure_at,instance_reference,external_workflow_id").eq("organization_id", context.organization.id).order("workflow_name"),
-    client.from("workflow_ingestion_credentials").select("id,workflow_id,label,token_hint,status,rate_limit_per_minute,expires_at,last_used_at,created_at,revoked_at").eq("organization_id", context.organization.id).order("created_at", { ascending: false }),
-    client.from("workflow_executions").select("id,workflow_id,external_execution_id,status,started_at,finished_at,duration_ms,error_code,error_summary,monitoring_source,last_event_at,last_received_at").eq("organization_id", context.organization.id).order("last_event_at", { ascending: false }).limit(200),
+  const internalOrganizationIds = new Set(context.memberships
+    .filter((membership) => canViewInternalWorkspace(membership.role))
+    .map((membership) => membership.organizationId));
+  const organizations = context.organizations
+    .filter((organization) => internalOrganizationIds.has(organization.id))
+    .map((organization) => ({ id: organization.id, name: organization.name }));
+  const selectedOrganization = organizations.find((organization) => organization.id === requestedOrganizationId)
+    ?? organizations.find((organization) => organization.id === context.organization.id)
+    ?? organizations[0];
+  if (!selectedOrganization) throw new Error("No internal client organization is available.");
+  const organizationId = selectedOrganization.id;
+
+  const [workflowResult, credentialResult, executionResult, processResult, implementationResult, metricResult, membershipResult, workflowMetricResult] = await Promise.all([
+    client.from("implementation_workflows").select("id,implementation_id,process_id,owner_membership_id,workflow_name,purpose,platform,environment,operational_status,monitoring_status,last_successful_execution_at,last_failure_at,instance_reference,external_workflow_id,workflow_url,registration_source,client_visible").eq("organization_id", organizationId).order("workflow_name"),
+    client.from("workflow_ingestion_credentials").select("id,workflow_id,label,token_hint,status,rate_limit_per_minute,expires_at,last_used_at,created_at,revoked_at").eq("organization_id", organizationId).order("created_at", { ascending: false }),
+    client.from("workflow_executions").select("id,workflow_id,external_execution_id,status,started_at,finished_at,duration_ms,error_code,error_summary,monitoring_source,last_event_at,last_received_at").eq("organization_id", organizationId).order("last_event_at", { ascending: false }).limit(200),
+    client.from("processes").select("id,name").eq("organization_id", organizationId).order("name"),
+    client.from("implementations").select("id,name").eq("organization_id", organizationId).order("name"),
+    client.from("measurement_metrics").select("id,name,unit").eq("organization_id", organizationId).order("name"),
+    client.from("organization_memberships").select("id,user_id,role,status").eq("organization_id", organizationId).eq("status", "active"),
+    client.from("workflow_metrics").select("workflow_id,metric_id").eq("organization_id", organizationId),
   ]);
-  for (const result of [workflowResult, credentialResult, executionResult]) if (result.error) throw new Error(`Unable to load internal workflow monitoring: ${result.error.message}`);
+  for (const result of [workflowResult, credentialResult, executionResult, processResult, implementationResult, metricResult, membershipResult, workflowMetricResult]) if (result.error) throw new Error(`Unable to load internal workflow monitoring: ${result.error.message}`);
+  const membershipRows = (membershipResult.data ?? []) as unknown as Row[];
+  const userIds = membershipRows.map((row) => String(row.user_id));
+  const profileResult = userIds.length
+    ? await client.from("profiles").select("id,email,full_name").in("id", userIds)
+    : { data: [], error: null };
+  if (profileResult.error) throw new Error(`Unable to load workflow owners: ${profileResult.error.message}`);
+  const profileById = new Map(((profileResult.data ?? []) as unknown as Row[]).map((row) => [String(row.id), row]));
+  const workflowMetricRows = (workflowMetricResult.data ?? []) as unknown as Row[];
   const executionRows = (executionResult.data ?? []) as unknown as Row[];
   return {
-    organizationName: context.organization.name,
+    organizationId, organizationName: selectedOrganization.name, organizations,
     workflows: ((workflowResult.data ?? []) as unknown as Row[]).map((row): InternalWorkflow => {
       const rows = executionRows.filter((item) => item.workflow_id === row.id).map(execution);
-      return { id: String(row.id), implementationId: String(row.implementation_id), name: String(row.workflow_name), purpose: String(row.purpose), environment: String(row.environment), operationalStatus: String(row.operational_status), monitoringStatus: String(row.monitoring_status), lastSuccessAt: text(row.last_successful_execution_at), lastFailureAt: text(row.last_failure_at), lastReportedAt: rows[0]?.lastEventAt ?? null, lastExecutionStatus: rows[0]?.status ?? null, executionCount: rows.length, successCount: rows.filter((item) => item.status === "successful").length, failureCount: rows.filter((item) => item.status === "failed").length, averageDurationMs: rows.length ? rows.reduce((sum, item) => sum + (item.durationMs ?? 0), 0) / rows.filter((item) => item.durationMs !== null).length || null : null, executions: rows, demo: false, instanceReference: String(row.instance_reference), externalWorkflowId: String(row.external_workflow_id), platform: String(row.platform) };
+      return { id: String(row.id), implementationId: text(row.implementation_id), name: String(row.workflow_name), purpose: text(row.purpose), environment: String(row.environment), operationalStatus: String(row.operational_status), monitoringStatus: String(row.monitoring_status), lastSuccessAt: text(row.last_successful_execution_at), lastFailureAt: text(row.last_failure_at), lastReportedAt: rows[0]?.lastEventAt ?? null, lastExecutionStatus: rows[0]?.status ?? null, executionCount: rows.length, successCount: rows.filter((item) => item.status === "successful").length, failureCount: rows.filter((item) => item.status === "failed").length, averageDurationMs: rows.length ? rows.reduce((sum, item) => sum + (item.durationMs ?? 0), 0) / rows.filter((item) => item.durationMs !== null).length || null : null, executions: rows, demo: false, instanceReference: String(row.instance_reference), externalWorkflowId: String(row.external_workflow_id), platform: String(row.platform), workflowUrl: text(row.workflow_url), registrationSource: String(row.registration_source), processId: text(row.process_id), ownerMembershipId: text(row.owner_membership_id), metricId: text(workflowMetricRows.find((item) => item.workflow_id === row.id)?.metric_id), clientVisible: row.client_visible === true };
     }),
     credentials: (credentialResult.data ?? []) as unknown as Row[],
+    processes: ((processResult.data ?? []) as unknown as Row[]).map((row) => ({ id: String(row.id), name: String(row.name) })),
+    implementations: ((implementationResult.data ?? []) as unknown as Row[]).map((row) => ({ id: String(row.id), name: String(row.name) })),
+    metrics: ((metricResult.data ?? []) as unknown as Row[]).map((row) => ({ id: String(row.id), name: `${String(row.name)} · ${String(row.unit)}` })),
+    members: membershipRows.map((row) => {
+      const profile = profileById.get(String(row.user_id));
+      return { id: String(row.id), name: text(profile?.full_name) ?? text(profile?.email) ?? String(row.role).replaceAll("_", " ") };
+    }),
   };
 }
