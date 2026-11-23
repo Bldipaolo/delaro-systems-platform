@@ -137,6 +137,8 @@ a { color: inherit; text-decoration: none; }
 .demo-label { color: var(--color-muted); font-size: 11px; }
 .support-link, .text-link { display: inline-flex; align-items: center; gap: 8px; color: var(--color-navy); background: transparent; border: 0; font-size: 13px; font-weight: 500; padding: 0; }
 .support-link:hover, .text-link:hover { color: var(--color-sea-glass-ink); }
+.internal-connect-action { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 8px 12px; border: 1px solid var(--color-sea-glass-ink); border-radius: var(--radius-sm); background: var(--color-sea-glass-ink); color: var(--color-white); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.internal-connect-action:hover { background: var(--color-navy); border-color: var(--color-navy); color: var(--color-white); }
 .demo-controls { position: relative; }
 .demo-control-trigger { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: transparent; color: var(--color-muted); padding: 7px 9px; font-size: 10px; }
 .demo-control-trigger:hover { color: var(--color-navy); border-color: var(--color-sea-glass); }
@@ -449,6 +451,7 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
   .topbar-actions { width: 100%; justify-content: flex-end; gap: 12px; }
   .support-link { font-size: 11px; gap: 4px; }
   .support-link svg { width: 14px; height: 14px; }
+  .internal-connect-action { min-height: 34px; padding: 7px 10px; font-size: 11px; }
   .content { padding: 34px 20px 60px; }
   h1 { font-size: 41px; }
   .page-intro { padding-bottom: 42px; }
