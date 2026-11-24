@@ -71,6 +71,25 @@ Then send:
 
 Use the same workflow-scoped Delaro credential only for the registered workflow. If one shared error workflow monitors several workflows, use a branch per registered workflow and its corresponding Delaro credential. Do not send the source workflow ID in the payload as a substitute for credential scoping.
 
+### Importable templates
+
+The internal Workflow monitoring page exposes three credential-free templates:
+
+- `delaro-success-reporter.json` — import it, select the workflow-scoped **Delaro Execution Reporter** Header Auth credential, then copy **Report Success to Delaro** onto the real success-only path. Do not leave the Manual Trigger connected in the production workflow.
+- `delaro-error-reporter.json` — import it as a separate workflow, select the same workflow-scoped Header Auth credential, and publish it. In the monitored workflow choose **More actions → Settings → Error workflow**, select the imported error reporter, and save.
+- `delaro-controlled-failure-test.json` — import it as an isolated workflow, assign the error reporter under Workflow Settings, publish it, and send an empty `POST` request to its production webhook URL. It intentionally stops with a fixed non-sensitive error and must not be connected to business-processing nodes.
+
+The Error Trigger template prefers n8n's original failed `execution.id`. Trigger-node failures may not have one, so the template creates a bounded fallback identifier from the source workflow ID and trigger timestamp. This preserves idempotency without sending the source workflow ID as trusted tenant context; the reporter credential remains the only authority for organization and workflow attribution.
+
+Do not paste a Delaro token into exported workflow JSON. The placeholder credential reference must be replaced in n8n after import. n8n only activates Error Trigger for automatic executions, so publish both the monitored workflow and the error workflow before acceptance testing.
+
+### Coverage labels
+
+- **Success reporting verified** means at least one authenticated `n8n_workflow_reporter` success exists.
+- **Failure reporting verified** means at least one authenticated `n8n_error_trigger` failure exists.
+- **Connected · failure reported** means telemetry is arriving and the latest execution failed. It is not a monitoring disconnection.
+- **Monitoring stale** means no recent authenticated report arrived within the freshness window. It does not prove the business workflow failed.
+
 ## Acceptance run
 
 Use a non-production workflow and, when possible, a dedicated test organization. `Atlantic Operations Group` is available in the connected pilot project, but do not mark its workflow connected until a genuine n8n Cloud execution has been observed.

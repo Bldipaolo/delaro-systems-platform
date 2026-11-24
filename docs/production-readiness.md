@@ -128,6 +128,18 @@ Stage 3A establishes the authenticated reporting boundary and client monitoring 
 Applied Stage 3A migrations:
 
 - `stage3a_live_n8n_observability`
+
+### Live integration update — 24 November 2026
+
+| Acceptance area | Status | Actual verification | Remaining blocker |
+|---|---|---|---|
+| Genuine n8n success | PASS | `Test Email Agent` sent authenticated production telemetry to the deployed ingestion endpoint; n8n received `accepted: true, duplicate: false`, Supabase stored successful execution records, and the Atlantic client Workflows page displayed monitoring live. | None for success reporting. |
+| Importable success template | PASS | Automated tests parse the exported JSON, assert the success reporter node and production endpoint, and scan for embedded Delaro tokens. | Operators must select the correct Header Auth credential after import. |
+| Importable Error Trigger template | PASS | Automated tests parse the exported workflow, assert Error Trigger as the first node, verify sanitized bounded failure metadata, and scan for embedded secrets. | Genuine automatic Error Trigger execution still required. |
+| Controlled failure template | PASS | Automated tests assert the isolated Webhook → Stop And Error structure and inactive import state. | Must be imported, linked, published, invoked through its production webhook, then removed or disabled after testing. |
+| Genuine n8n failure | NOT TESTED | No automatic Error Trigger failure has been observed in Delaro yet. Manual executions are not valid for this acceptance case. | Release blocker for comprehensive failure monitoring. |
+| Coverage clarity | PASS | Internal workflow records independently show verified success reporting, verified failure reporting, and connection freshness. Client copy distinguishes a reported workflow failure from monitoring disconnection. | None. |
+| Sensitive error handling | PASS | Unit tests cover Bearer tokens, JWT-like tokens, email addresses, credential assignments, URLs, query secrets, and network addresses. | Sanitization reduces exposure but cannot classify every possible secret; templates intentionally send a fixed generic summary. |
 - `stage3a_advisor_hardening`
 - `stage3a_execution_policy_hardening`
 

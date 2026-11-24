@@ -51,7 +51,7 @@ insert into public.implementation_workflows (
 
 select public.rotate_workflow_ingestion_credential(
   'b3460000-0000-4000-8000-000000000001','b3470000-0000-4000-8000-000000000001',
-  repeat('a',64),'testhint','Stage 3A SQL reporter',4,null
+  repeat('a',64),'testhint','Stage 3A SQL reporter',5,null
 );
 reset role;
 select set_config('request.jwt.claim.role','service_role',true);
@@ -88,13 +88,22 @@ begin
   if (select status from public.workflow_executions where external_execution_id='success-run') <> 'successful' then
     raise exception 'Late event regressed terminal execution state'; end if;
 
-  perform public.ingest_n8n_execution_event(
+  select public.ingest_n8n_execution_event(
     'b3470000-0000-4000-8000-000000000001',repeat('a',64),'failure-event','failure-run',
     'failed','failed',now(),now()-interval '3 seconds',now(),3000,'SOURCE_TIMEOUT',
-    'Source system did not respond before the configured timeout.','n8n_error_trigger',repeat('e',64));
-  if (select count(*) from public.workflow_executions) <> 2
-     or (select count(*) from public.workflow_execution_events) <> 3 then
-    raise exception 'Execution aggregation or immutable event history is incorrect'; end if;
+    'Source system did not respond before the configured timeout.','n8n_error_trigger',repeat('e',64)) into result;
+  if result->>'duplicate' <> 'false' then raise exception 'First failure event was treated as duplicate'; end if;
+
+  select public.ingest_n8n_execution_event(
+    'b3470000-0000-4000-8000-000000000001',repeat('a',64),'failure-event','failure-run',
+    'failed','failed',now(),now()-interval '3 seconds',now(),3000,'SOURCE_TIMEOUT',
+    'Source system did not respond before the configured timeout.','n8n_error_trigger',repeat('e',64)) into result;
+  if result->>'duplicate' <> 'true' then raise exception 'Duplicate failure event was not identified'; end if;
+  if (select count(*) from public.workflow_executions where workflow_id='b3460000-0000-4000-8000-000000000001') <> 2
+     or (select count(*) from public.workflow_execution_events where workflow_id='b3460000-0000-4000-8000-000000000001') <> 3 then
+    raise exception 'Execution aggregation or immutable event history is incorrect: executions %, events %',
+      (select count(*) from public.workflow_executions where workflow_id='b3460000-0000-4000-8000-000000000001'),
+      (select count(*) from public.workflow_execution_events where workflow_id='b3460000-0000-4000-8000-000000000001'); end if;
 
   blocked := false;
   begin

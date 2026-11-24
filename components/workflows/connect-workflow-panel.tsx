@@ -81,6 +81,16 @@ export function ConnectWorkflowPanel({
 }`}</pre></li>
         <li><strong>Run one genuine execution</strong><span>Return here after n8n reports it. The status remains configured until Delaro receives valid authenticated telemetry.</span></li>
       </ol>
+      <div className="workflow-template-library" aria-labelledby="workflow-template-heading">
+        <div><p className="eyebrow">Reusable n8n setup</p><h4 id="workflow-template-heading">Download reporting templates</h4></div>
+        <p>Import the success reporter and copy its HTTP node to the real successful completion path. Import and publish the Error Trigger workflow separately, then select it under the monitored workflow&apos;s settings. Imported credentials are placeholders; choose the Header Auth credential you just created.</p>
+        <div className="workflow-template-links">
+          <a download href="/integrations/n8n/delaro-success-reporter.json">Success reporter JSON</a>
+          <a download href="/integrations/n8n/delaro-error-reporter.json">Error Trigger JSON</a>
+          <a download href="/integrations/n8n/delaro-controlled-failure-test.json">Controlled failure test JSON</a>
+        </div>
+        <p className="form-guidance">Error Trigger runs only for automatic executions. A manual n8n test does not prove failure coverage.</p>
+      </div>
       <a className="workflow-verify-link" href={`#workflow-${state.workflowId}`}>Check connection record <span aria-hidden="true">↓</span></a>
     </div>}
   </section>;

@@ -61,8 +61,32 @@ test("workflow onboarding remains usable on narrow screens", async () => {
 test("plain-language errors redact common credential and identity material", () => {
   assert.equal(
     sanitizeErrorSummary("Bearer abc.def client@example.com https://service.test/path?token=secret-value"),
-    "[credential redacted] [email redacted] https://service.test/path?token=[redacted]",
+    "[credential redacted] [email redacted] [url redacted]",
   );
+  assert.equal(
+    sanitizeErrorSummary("api_key=live-secret password:unsafe 192.168.1.20"),
+    "api_key=[redacted] password=[redacted] [network address redacted]",
+  );
+});
+
+test("n8n templates are importable JSON and never contain a Delaro secret", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const names = ["delaro-success-reporter", "delaro-error-reporter", "delaro-controlled-failure-test"];
+  const templates = await Promise.all(names.map(async (name) => JSON.parse(await readFile(new URL(`../public/integrations/n8n/${name}.json`, import.meta.url), "utf8"))));
+  for (const template of templates) {
+    assert.equal(typeof template.name, "string");
+    assert.equal(Array.isArray(template.nodes), true);
+    assert.equal(template.active, false);
+    assert.doesNotMatch(JSON.stringify(template), /delaro_n8n_[0-9a-f-]{36}\./i);
+  }
+  const success = templates[0];
+  assert.equal(success.nodes.some((node) => node.name === "Report Success to Delaro"), true);
+  const failure = templates[1];
+  assert.equal(failure.nodes[0].type, "n8n-nodes-base.errorTrigger");
+  assert.match(JSON.stringify(failure), /n8n_error_trigger/);
+  assert.match(JSON.stringify(failure), /trigger-/);
+  const controlled = templates[2];
+  assert.equal(controlled.nodes.some((node) => node.type === "n8n-nodes-base.stopAndError"), true);
 });
 
 test("durations remain readable across execution scales", () => {

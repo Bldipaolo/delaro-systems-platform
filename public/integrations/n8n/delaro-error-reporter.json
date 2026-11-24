@@ -1,0 +1,46 @@
+{
+  "name": "Delaro - Error Reporter Template",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "ac3d1648-8284-4ab2-985d-b54e9413d7a9",
+      "name": "When Automatic Execution Fails"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://delaro-systems-platform.vercel.app/api/integrations/n8n/executions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ eventId: (($json.execution && $json.execution.id) ? String($json.execution.id) : ('trigger-' + (($json.workflow && $json.workflow.id) || 'unknown') + '-' + (($json.trigger && $json.trigger.error && $json.trigger.error.timestamp) || $now.toMillis()))) + '-failed', executionId: ($json.execution && $json.execution.id) ? String($json.execution.id) : ('trigger-' + (($json.workflow && $json.workflow.id) || 'unknown') + '-' + (($json.trigger && $json.trigger.error && $json.trigger.error.timestamp) || $now.toMillis())), eventType: 'failed', status: 'failed', occurredAt: $now.toISO(), errorCode: 'N8N_EXECUTION_FAILED', errorSummary: 'The workflow reported a failed automatic execution.', source: 'n8n_error_trigger' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [300, 0],
+      "id": "e69a7db0-c235-478e-8074-759dbf1a917f",
+      "name": "Report Failure to Delaro",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_N8N_CREDENTIAL_ID",
+          "name": "Delaro Execution Reporter"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When Automatic Execution Fails": {
+      "main": [[{"node": "Report Failure to Delaro", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {"executionOrder": "v1"},
+  "active": false,
+  "tags": []
+}

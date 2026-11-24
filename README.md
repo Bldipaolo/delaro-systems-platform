@@ -86,7 +86,7 @@ Client files use a private `client-documents` Storage bucket and `client_documen
 
 ## Known unfinished areas
 
-- Atlantic Operations Group and Delaro Systems exist in the connected project with active internal memberships. A genuine n8n Cloud execution has not yet been observed, so no workflow connection should be treated as end-to-end verified. Use [the n8n acceptance run](docs/integrations/n8n-observability.md#acceptance-run) before relying on live monitoring.
+- Atlantic Operations Group and Delaro Systems exist in the connected project with active internal memberships. `Test Email Agent` has reported genuine authenticated n8n Cloud successes. Failure coverage remains incomplete until a published Error Trigger workflow reports a controlled automatic failure. Use [the n8n acceptance run](docs/integrations/n8n-observability.md#acceptance-run) before relying on comprehensive monitoring.
 - Supabase Auth's leaked-password protection is disabled in the connected project's advisor report and must be enabled in the Dashboard before launch.
 - Auth recovery, email deliverability, and sign-out persistence still need real-browser acceptance testing with a test account. The code path and unit checks do not prove SMTP delivery.
 - Uploaded documents have type/size restrictions and private access, but no malware scanning, DLP, retention schedule, or automated orphan-object cleanup yet. Do not use for sensitive regulated files until those policies are agreed.

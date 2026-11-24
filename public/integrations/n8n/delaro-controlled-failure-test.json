@@ -1,0 +1,38 @@
+{
+  "name": "Delaro - Controlled Failure Test",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delaro-controlled-failure-test",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "id": "d668e1db-40ec-473f-895c-6807340762db",
+      "name": "Controlled Test Webhook",
+      "webhookId": "2d2fc78f-315c-4c3c-9201-32ce1008fd66"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Delaro controlled failure test. No business data was processed."
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [280, 0],
+      "id": "b31df765-2e2c-48e1-aa30-0834d78f9711",
+      "name": "Create Controlled Failure"
+    }
+  ],
+  "connections": {
+    "Controlled Test Webhook": {
+      "main": [[{"node": "Create Controlled Failure", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {"executionOrder": "v1"},
+  "active": false,
+  "tags": []
+}

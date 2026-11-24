@@ -36,8 +36,12 @@ export function sanitizeErrorSummary(value: string | null | undefined) {
   return value
     .replace(/[\u0000-\u001f\u007f]/g, " ")
     .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, "[credential redacted]")
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, "[token redacted]")
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[email redacted]")
+    .replace(/\b(password|passwd|secret|api[_-]?key|access[_-]?token|refresh[_-]?token)\s*[:=]\s*[^\s,;]+/gi, "$1=[redacted]")
     .replace(/([?&](?:token|key|secret|password|signature)=)[^&\s]+/gi, "$1[redacted]")
+    .replace(/https?:\/\/[^\s]+/gi, "[url redacted]")
+    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, "[network address redacted]")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 500) || null;

@@ -13,7 +13,7 @@ function observed(value: string | null) {
 
 function Connection({ workflow }: { workflow: ClientWorkflow }) {
   const state = connectionState(workflow.monitoringStatus, workflow.lastReportedAt);
-  const label = state === "connected" ? "Monitoring live" : state === "degraded" ? "Requires attention" : state === "stale" ? "Monitoring stale" : state === "disabled" ? "Monitoring disabled" : "Monitoring disconnected";
+  const label = state === "connected" ? "Monitoring live" : state === "degraded" ? "Monitoring live · failure reported" : state === "stale" ? "Monitoring stale" : state === "disabled" ? "Monitoring disabled" : "Monitoring disconnected";
   return <span className={`workflow-connection workflow-connection-${state}`}><i aria-hidden="true"/>{label}</span>;
 }
 

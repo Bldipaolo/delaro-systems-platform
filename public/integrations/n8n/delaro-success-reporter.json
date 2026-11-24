@@ -1,0 +1,46 @@
+{
+  "name": "Delaro - Success Reporter Template",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "dded0114-cbd8-4b59-a95b-a726de4d127d",
+      "name": "Template Start"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://delaro-systems-platform.vercel.app/api/integrations/n8n/executions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ eventId: $execution.id + '-completed', executionId: String($execution.id), eventType: 'completed', status: 'successful', occurredAt: $now.toISO(), source: 'n8n_workflow_reporter' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [260, 0],
+      "id": "cf94823f-00a9-41f1-a4b7-059d3023d9bd",
+      "name": "Report Success to Delaro",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_N8N_CREDENTIAL_ID",
+          "name": "Delaro Execution Reporter"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Template Start": {
+      "main": [[{"node": "Report Success to Delaro", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {"executionOrder": "v1"},
+  "active": false,
+  "tags": []
+}
