@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
-import { isUnauthenticatedServerEndpoint } from "@/lib/auth/public-routes";
+import {
+  isPublicIntegrationAsset,
+  isUnauthenticatedServerEndpoint,
+} from "@/lib/auth/public-routes";
 
 export async function middleware(request: NextRequest) {
   const config = getSupabasePublicConfig();
@@ -9,6 +12,9 @@ export async function middleware(request: NextRequest) {
   // Only explicitly enabled development demo mode may bypass authentication.
   if (!config) return NextResponse.next();
   if (request.nextUrl.pathname === "/auth/callback") return NextResponse.next();
+  // Downloadable n8n workflow templates contain placeholders only and must not
+  // be rewritten to the login page before Next.js serves the static JSON file.
+  if (isPublicIntegrationAsset(request.nextUrl.pathname)) return NextResponse.next();
   // Machine-to-machine endpoints perform their own scoped authentication.
   if (isUnauthenticatedServerEndpoint(request.nextUrl.pathname)) return NextResponse.next();
 
