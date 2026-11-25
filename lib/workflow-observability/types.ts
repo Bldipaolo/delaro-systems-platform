@@ -36,6 +36,13 @@ export type ClientWorkflow = {
   demo: boolean;
 };
 
+export type ClientWorkflowDetail = ClientWorkflow & {
+  executionTotal: number;
+  executionPage: number;
+  executionPageSize: number;
+  executionPageCount: number;
+};
+
 export type ConnectionState = "connected" | "degraded" | "stale" | "disconnected" | "disabled";
 
 export function connectionState(

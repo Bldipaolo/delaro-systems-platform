@@ -7,7 +7,7 @@
         "rule": "overused-font",
         "value": "inter",
         "createdAt": "2026-11-15T02:20:07.273Z",
-        "reason": "User-specified Delaro brand system requires Inter for body and UI typography."
+        "reason": "User-supplied Stage 3B specification explicitly requires Inter for Delaro body and UI typography."
       }
     ]
   }

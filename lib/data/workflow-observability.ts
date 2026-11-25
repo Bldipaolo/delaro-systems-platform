@@ -1,7 +1,7 @@
 import { isSupabaseConfigured, requireCurrentUserContext, requireInternalUserContext } from "@/lib/auth/context";
 import { canViewInternalWorkspace } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
-import type { ClientWorkflow, ExecutionStatus, WorkflowExecution } from "@/lib/workflow-observability/types";
+import type { ClientWorkflow, ClientWorkflowDetail, ExecutionStatus, WorkflowExecution } from "@/lib/workflow-observability/types";
 
 type Row = Record<string, unknown>;
 export type InternalWorkflow = ClientWorkflow & {
@@ -65,7 +65,9 @@ export async function getClientWorkflows(): Promise<ClientWorkflow[]> {
   if (ids.length) {
     const { data, error } = await client.from("workflow_executions")
       .select("id,workflow_id,external_execution_id,status,started_at,finished_at,duration_ms,error_code,error_summary,monitoring_source,last_event_at,last_received_at")
-      .eq("organization_id", context.organization.id).in("workflow_id", ids).order("last_event_at", { ascending: false }).limit(200);
+      .eq("organization_id", context.organization.id).in("workflow_id", ids)
+      .gte("last_event_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+      .order("last_event_at", { ascending: false }).limit(1000);
     if (error) throw new Error(`Unable to load workflow execution history: ${error.message}`);
     executionRows = (data ?? []) as unknown as Row[];
   }
@@ -81,8 +83,47 @@ export async function getClientWorkflows(): Promise<ClientWorkflow[]> {
   }));
 }
 
-export async function getClientWorkflow(workflowId: string) {
-  return (await getClientWorkflows()).find((workflow) => workflow.id === workflowId) ?? null;
+export async function getClientWorkflow(workflowId: string, page = 1, pageSize = 25): Promise<ClientWorkflowDetail | null> {
+  const workflow = (await getClientWorkflows()).find((item) => item.id === workflowId);
+  if (!workflow) return null;
+  if (!isSupabaseConfigured() || workflow.demo) {
+    const start = (page - 1) * pageSize;
+    const executionTotal = workflow.executions.length;
+    return { ...workflow, executions: workflow.executions.slice(start, start + pageSize), executionTotal,
+      executionPage: page, executionPageSize: pageSize, executionPageCount: Math.max(1, Math.ceil(executionTotal / pageSize)) };
+  }
+  const context = await requireCurrentUserContext();
+  const client = await createClient();
+  if (!context || !client) return null;
+  const safePage = Math.max(1, Math.floor(page));
+  const safePageSize = Math.min(50, Math.max(10, Math.floor(pageSize)));
+  const from = (safePage - 1) * safePageSize;
+  const { data, error, count } = await client.from("workflow_executions")
+    .select("id,workflow_id,external_execution_id,status,started_at,finished_at,duration_ms,error_code,error_summary,monitoring_source,last_event_at,last_received_at", { count: "exact" })
+    .eq("organization_id", context.organization.id).eq("workflow_id", workflowId)
+    .order("last_event_at", { ascending: false }).range(from, from + safePageSize - 1);
+  if (error) throw new Error(`Unable to load workflow execution history: ${error.message}`);
+  const executionTotal = count ?? 0;
+  return { ...workflow, executions: ((data ?? []) as unknown as Row[]).map(execution), executionTotal,
+    executionPage: safePage, executionPageSize: safePageSize,
+    executionPageCount: Math.max(1, Math.ceil(executionTotal / safePageSize)) };
+}
+
+export async function getClientWorkflowExecution(workflowId: string, executionId: string) {
+  const workflow = (await getClientWorkflows()).find((item) => item.id === workflowId);
+  if (!workflow) return null;
+  if (!isSupabaseConfigured() || workflow.demo) {
+    const item = workflow.executions.find((candidate) => candidate.id === executionId);
+    return item ? { workflow, execution: item } : null;
+  }
+  const context = await requireCurrentUserContext();
+  const client = await createClient();
+  if (!context || !client) return null;
+  const { data, error } = await client.from("workflow_executions")
+    .select("id,workflow_id,external_execution_id,status,started_at,finished_at,duration_ms,error_code,error_summary,monitoring_source,last_event_at,last_received_at")
+    .eq("organization_id", context.organization.id).eq("workflow_id", workflowId).eq("id", executionId).maybeSingle();
+  if (error) throw new Error(`Unable to load workflow execution: ${error.message}`);
+  return data ? { workflow, execution: execution(data as unknown as Row) } : null;
 }
 
 export async function getInternalWorkflowMonitoring(requestedOrganizationId?: string): Promise<InternalWorkflowWorkspace> {

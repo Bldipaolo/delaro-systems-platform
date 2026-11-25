@@ -6,13 +6,20 @@ import { CloseIcon, DecisionIcon, DocumentIcon, InitiativeIcon, MenuIcon, Operat
 import { useMobileNavigation } from "./use-mobile-navigation";
 
 const navigation = [
-  { label: "Home", href: "/overview", icon: OverviewIcon },
-  { label: "Operations", href: "/operations", icon: OperationsIcon },
-  { label: "Workflows", href: "/workflows", icon: OperationsIcon },
-  { label: "Improvements", href: "/improvements", icon: InitiativeIcon },
-  { label: "Impact", href: "/impact", icon: PerformanceIcon },
-  { label: "Files", href: "/documents", icon: DocumentIcon },
-  { label: "Decisions", href: "/decisions", icon: DecisionIcon },
+  { label: "Monitor", items: [
+    { label: "Command center", href: "/overview", icon: OverviewIcon },
+    { label: "Workflows", href: "/workflows", icon: OperationsIcon },
+    { label: "Activity", href: "/activity", icon: PerformanceIcon },
+  ] },
+  { label: "Improve", items: [
+    { label: "Improvements", href: "/improvements", icon: InitiativeIcon },
+    { label: "Decisions", href: "/decisions", icon: DecisionIcon },
+  ] },
+  { label: "Understand", items: [
+    { label: "Operations", href: "/operations", icon: OperationsIcon },
+    { label: "Impact", href: "/impact", icon: PerformanceIcon },
+    { label: "Files", href: "/documents", icon: DocumentIcon },
+  ] },
 ] as const;
 
 export function Sidebar({ organizationName, userName, userRole }: { organizationName: string; userName: string; userRole: string }) {
@@ -29,8 +36,7 @@ export function Sidebar({ organizationName, userName, userRole }: { organization
       <div className="workspace-label">{organizationName.toUpperCase()} WORKSPACE</div>
       <div className="organization-switcher"><span className="organization-avatar">{organizationInitial}</span><span className="organization-name"><strong>{organizationName}</strong><small>Client workspace</small></span></div>
       <nav aria-label="Client navigation">
-        <div className="nav-section-label">WORKSPACE</div>
-        {navigation.map(({ label, href, icon: Icon }) => <Link key={label} href={href} aria-current={pathname === href ? "page" : undefined} className={`nav-link ${pathname === href ? "nav-link-active" : ""}`} onClick={() => setOpen(false)}><Icon size={17}/><span>{label}</span></Link>)}
+        {navigation.map((group) => <div className="client-nav-group" key={group.label}><div className="nav-section-label">{group.label.toUpperCase()}</div>{group.items.map(({ label, href, icon: Icon }) => <Link key={label} href={href} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? "page" : undefined} className={`nav-link ${pathname === href || pathname.startsWith(`${href}/`) ? "nav-link-active" : ""}`} onClick={() => setOpen(false)}><Icon size={17}/><span>{label}</span></Link>)}</div>)}
       </nav>
       <div className="sidebar-bottom">
         <div className="linear-horizon horizon-label"><span>CONTINUITY</span></div>

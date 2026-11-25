@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { InternalOperationalEvent, OperationalActivity, OperationalEvent, OperationalException } from "@/lib/operational-events/types";
+import type { ClientWorkflow } from "@/lib/workflow-observability/types";
+import { durationLabel, statusLabel } from "@/lib/workflow-observability/types";
 
 const severityLabel = { info: "Update", warning: "Review", critical: "Important" };
 const exceptionLabel = { open: "Open", investigating: "Being investigated", awaiting_client: "Waiting for your input", resolved: "Resolved", dismissed: "Dismissed" };
@@ -24,11 +26,16 @@ function EventRow({ item }: { item: OperationalEvent }) {
   </article>;
 }
 
-export function ActivityWorkspace({ activity }: { activity: OperationalActivity }) {
+export function ActivityWorkspace({ activity, workflows = [] }: { activity: OperationalActivity; workflows?: ClientWorkflow[] }) {
+  const executions = workflows.flatMap((workflow) => workflow.executions.map((execution) => ({ workflow, execution })))
+    .sort((a, b) => Date.parse(b.execution.lastEventAt) - Date.parse(a.execution.lastEventAt)).slice(0, 30);
   return <main className="content activity-page">
-    <section className="page-intro compact"><div><p className="eyebrow">Operations</p><h1>Activity</h1><p className="intro-copy">A clear record of what happened, what changed, and what needs attention. Technical logs stay with Delaro.</p></div>{activity.demo && <span className="activity-demo-label">Northstar · Demo examples</span>}</section>
+    <section className="page-intro compact"><div><h1>Activity</h1><p className="intro-copy">What happened across your operation, what changed, and where intervention is required. Technical logs stay with Delaro.</p></div>{activity.demo && <span className="activity-demo-label">Illustrative demo examples</span>}</section>
     <section className="activity-section" aria-labelledby="activity-attention-title"><div className="section-heading"><div><h2 id="activity-attention-title">Requires attention</h2><p className="activity-section-intro">Open issues affecting the work. Items waiting for your decision link to the decision record.</p></div></div>
       {activity.exceptions.length ? <div className="activity-exception-list">{activity.exceptions.map((item) => <ExceptionRow key={item.id} item={item}/>)}</div> : <p className="activity-empty">No open exceptions have been shared.</p>}
+    </section>
+    <section className="activity-section" aria-labelledby="activity-workflow-title"><div className="section-heading"><div><h2 id="activity-workflow-title">Workflow activity</h2><p className="activity-section-intro">Latest authenticated execution reports across connected workflows.</p></div><Link href="/workflows" className="text-link">Open monitoring →</Link></div>
+      {executions.length ? <div className="activity-workflow-list">{executions.map(({ workflow, execution }) => <Link href={`/workflows/${workflow.id}/executions/${execution.id}`} key={execution.id}><time dateTime={execution.lastEventAt}>{occurredAt(execution.lastEventAt)}</time><strong>{workflow.name}</strong><span className={`workflow-status workflow-status-${execution.status}`}>{statusLabel(execution.status)}</span><small>{durationLabel(execution.durationMs)}</small><b aria-hidden="true">→</b></Link>)}</div> : <p className="activity-empty">No authenticated workflow activity has been received.</p>}
     </section>
     <section className="activity-section" aria-labelledby="activity-recent-title"><div className="section-heading"><div><h2 id="activity-recent-title">Recent operational activity</h2><p className="activity-section-intro">Meaningful changes and outcomes, newest first.</p></div></div>
       {activity.events.length ? <div className="activity-event-list">{activity.events.map((item) => <EventRow key={item.id} item={item}/>)}</div> : <p className="activity-empty">No operational activity has been shared yet.</p>}

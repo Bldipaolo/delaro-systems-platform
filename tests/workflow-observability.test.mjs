@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { connectionState, durationLabel } from "../lib/workflow-observability/types.ts";
 import { createIntegrationToken, maxWorkflowEventBytes, parseIntegrationToken, sanitizeErrorSummary, workflowEventSchema } from "../lib/workflow-observability/protocol.ts";
 import { parseWorkflowReference } from "../lib/workflow-observability/registration.ts";
+import { workflowAnalytics, workflowAttention } from "../lib/workflow-observability/analytics.ts";
 
 test("workflow integration tokens are parseable but do not reveal their stored hash", () => {
   const generated = createIntegrationToken();
@@ -94,4 +95,41 @@ test("durations remain readable across execution scales", () => {
   assert.equal(durationLabel(420), "420 ms");
   assert.equal(durationLabel(4_200), "4.2 sec");
   assert.equal(durationLabel(92_000), "1 min 32 sec");
+});
+
+const analyticsWorkflow = {
+  id: "workflow-1", implementationId: null, name: "Order sync", purpose: null, environment: "production",
+  operationalStatus: "active", monitoringStatus: "degraded", lastSuccessAt: "2026-11-23T12:00:00Z",
+  lastFailureAt: "2026-11-24T12:00:00Z", lastReportedAt: "2026-11-24T12:00:00Z", lastExecutionStatus: "failed",
+  executionCount: 3, successCount: 2, failureCount: 1, averageDurationMs: 2000, demo: false,
+  executions: [
+    { id: "success", workflowId: "workflow-1", externalExecutionId: "1", status: "successful", startedAt: "2026-11-23T11:59:58Z", finishedAt: "2026-11-23T12:00:00Z", durationMs: 2000, errorCode: null, errorSummary: null, monitoringSource: "n8n_workflow_reporter", lastEventAt: "2026-11-23T12:00:00Z", lastReceivedAt: "2026-11-23T12:00:00Z" },
+    { id: "failure", workflowId: "workflow-1", externalExecutionId: "2", status: "failed", startedAt: "2026-11-24T11:59:56Z", finishedAt: "2026-11-24T12:00:00Z", durationMs: 4000, errorCode: "TEST", errorSummary: "Controlled failure", monitoringSource: "n8n_error_trigger", lastEventAt: "2026-11-24T12:00:00Z", lastReceivedAt: "2026-11-24T12:00:00Z" },
+    { id: "old", workflowId: "workflow-1", externalExecutionId: "0", status: "successful", startedAt: "2026-10-01T12:00:00Z", finishedAt: "2026-10-01T12:00:01Z", durationMs: 1000, errorCode: null, errorSummary: null, monitoringSource: "n8n_workflow_reporter", lastEventAt: "2026-10-01T12:00:01Z", lastReceivedAt: "2026-10-01T12:00:01Z" },
+  ],
+};
+
+test("workflow analytics group authenticated history without counting out-of-period events", () => {
+  const analytics = workflowAnalytics([analyticsWorkflow], "7d", new Date("2026-11-24T18:00:00Z"));
+  assert.equal(analytics.total, 2);
+  assert.equal(analytics.successful, 1);
+  assert.equal(analytics.failed, 1);
+  assert.equal(analytics.successRate, 0.5);
+  assert.equal(analytics.averageDurationMs, 3000);
+  assert.equal(analytics.series.length, 7);
+  assert.equal(analytics.series.reduce((sum, point) => sum + point.total, 0), 2);
+});
+
+test("attention feed includes only failed executions and remains newest first", () => {
+  const attention = workflowAttention([analyticsWorkflow]);
+  assert.deepEqual(attention.map((item) => item.execution.id), ["failure"]);
+});
+
+test("command-center workflow layouts retain narrow-screen alternatives", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(css, /\.command-grid \{ grid-template-columns: 1fr;/);
+  assert.match(css, /\.workflow-toolbar \{ grid-template-columns: 1fr;/);
+  assert.match(css, /\.activity-workflow-list > a \{ grid-template-columns: minmax\(0, 1fr\) auto;/);
+  assert.match(css, /prefers-reduced-motion: reduce/);
 });
