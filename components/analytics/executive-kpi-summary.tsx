@@ -6,7 +6,7 @@ export type ExecutiveKpi = {
   label: string;
   value: string;
   context: string;
-  status: EvidenceStatus;
+  status: EvidenceStatus | "observed";
   stateLabel?: string;
   emphasis?: boolean;
 };
