@@ -1310,6 +1310,23 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
 .financial-periods { margin-top: 24px; }
 .financial-periods > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 14px; padding: 10px 0; border-top: 1px solid var(--color-border); font-size: 11px; }
 .financial-periods small { grid-column: 1 / -1; color: var(--color-muted); font-size: 9px; }
+.value-validation-form { margin-top: 24px; padding: 20px 0; border-top: 1px solid var(--color-sea-glass-ink); border-bottom: 1px solid var(--color-border); }
+.value-validation-form h4 { margin: 0 0 8px; font-size: 14px; font-weight: 500; }
+.value-validation-form p { max-width: 68ch; margin: 0 0 14px; color: var(--color-slate); font-size: 11px; line-height: 1.6; }
+.value-validation-form label { display: grid; gap: 7px; color: var(--color-muted); font-size: 10px; }
+.value-validation-form textarea { min-height: 76px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-warm-white); color: var(--color-navy); font: 12px/1.5 var(--font-body); resize: vertical; }
+.value-validation-form > div { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.value-validation-form button { min-height: 38px; padding: 0 14px; border: 1px solid var(--color-navy); border-radius: 4px; background: var(--color-navy); color: var(--color-warm-white); font: 600 11px var(--font-body); }
+.value-validation-form button:last-child { background: transparent; color: var(--color-navy); }
+.workflow-value-ledger { border-top: 1px solid var(--color-border); }
+.workflow-value-ledger article { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(420px, 1.4fr); gap: 32px; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--color-border); }
+.workflow-value-ledger article > div { display: grid; gap: 6px; }
+.workflow-value-ledger article strong { font: 500 14px var(--font-display); }
+.workflow-value-ledger article span { color: var(--color-slate); font-size: 11px; line-height: 1.55; }
+.workflow-value-ledger dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin: 0; }
+.workflow-value-ledger dl div { min-width: 0; }
+.workflow-value-ledger dt { color: var(--color-muted); font-size: 9px; }
+.workflow-value-ledger dd { margin: 6px 0 0; font: 500 14px var(--font-display); overflow-wrap: anywhere; }
 .internal-analytics-section { margin-top: 58px; }
 .internal-analytics-section:first-of-type { margin-top: 45px; }
 .cost-benefit-comparison { border-bottom: 1px solid var(--color-border); }
@@ -1505,6 +1522,7 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
   .workflow-credential-panel { grid-template-columns: 1fr; gap: 25px; }
   .workflow-organization-bar, .workflow-connect-panel { grid-template-columns: 1fr; gap: 24px; }
   .workflow-organization-bar { align-items: start; }
+  .workflow-value-ledger article { grid-template-columns: 1fr; gap: 16px; }
   .workflow-setup-heading { flex-direction: column; }
   .analytics-page-header, .analytics-section-heading { align-items: start; flex-direction: column; gap: 14px; }
   .analytics-page-header > span, .analytics-section-heading > span { text-align: left; }
@@ -1525,6 +1543,7 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
   .workflow-kpis > div, .workflow-kpis > div:not(:first-child) { min-height: 84px; padding: 18px 0; border-top: 1px solid var(--color-border); border-left: 0; }
   .workflow-kpis > div:first-child { border-top: 0; }
   .workflow-card dl, .workflow-execution-row dl, .workflow-internal-row dl { grid-template-columns: 1fr; }
+  .workflow-value-ledger dl { grid-template-columns: 1fr; gap: 10px; }
   .workflow-execution-row > div { grid-template-columns: 1fr; }
   .workflow-execution-row p { grid-column: auto; }
   .workflow-demo-note { align-items: start; flex-direction: column; gap: 5px; }

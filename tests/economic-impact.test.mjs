@@ -73,6 +73,51 @@ test("executive stage totals are withheld when any eligible model is incomplete"
   assert.equal(summary.contributingCounts.recoverable, 1);
 });
 
+test("attribution, recurring costs, ROI, and payback stay modeled rather than verified", () => {
+  const model = calculateValueModel({ ...base, attributionPercentage: 50, attributionRationale: "Conservative attribution review",
+    recoverablePercentage: 80, expectedCapturePercentage: 75,
+    costs: [
+      { id: "c1", category: "implementation", label: "Implementation", amount: 5000, currencyCode: "USD", cadence: "one_time", annualizationFactor: null, sourceDescription: "Approved estimate", evidenceId: null, verificationStatus: "submitted" },
+      { id: "c2", category: "software", label: "Software", amount: 100, currencyCode: "USD", cadence: "monthly", annualizationFactor: null, sourceDescription: "Vendor quote", evidenceId: null, verificationStatus: "submitted" },
+    ],
+  });
+  assert.equal(model.attributedMaximum, 20820.8);
+  assert.equal(model.expectedAnnualValue, 12492.48);
+  assert.equal(model.annualizedCost, 1200);
+  assert.equal(model.firstYearCost, 6200);
+  assert.equal(model.modeledNetFirstYearValue, 6292.48);
+  assert.equal(model.modeledRoiPercentage, 101.5);
+  assert.equal(model.modeledPaybackMonths, 5.3);
+  assert.equal(model.verifiedRealizedValue, null);
+});
+
+test("labor capacity converts minutes to hours through a named safe formula", () => {
+  const model = calculateValueModel({ ...base, formulaKind: "minutes_to_hours_product", inputs: [
+    { ...base.inputs[0], id: "minutes", key: "minutes_saved", label: "Minutes saved", value: 4, unit: "minutes/email" },
+    { ...base.inputs[1], id: "volume", key: "volume", label: "Monthly volume", value: 100, unit: "emails/month" },
+    { ...base.inputs[2], id: "rate", key: "rate", label: "Loaded labor rate", value: 30, unit: "USD/hour" },
+  ] });
+  assert.equal(model.theoreticalMaximum, 200);
+});
+
+test("observed, realized, and verified economic states remain distinct", () => {
+  const evidence = [{ id: "e1", sourceType: "system_export", sourceReference: "Finance", description: null, documentUrl: null, verificationStatus: "verified" }];
+  const observed = { id: "o1", periodStart: "2026-01-01", periodEnd: "2026-01-31", measuredAt: "2026-02-01T00:00:00Z", realizedUnits: 2, unitValue: 50, unitLabel: "hours", realizedValue: 100, annualizationFactor: null, annualizedRunRate: null, annualizationMethod: null, evidenceId: "e1", realizationState: "observed", verificationStatus: "submitted" };
+  const realized = { ...observed, id: "r1", periodStart: "2026-02-01", periodEnd: "2026-02-28", realizationState: "realized", verificationStatus: "submitted", realizedUnits: 3, realizedValue: 150 };
+  const verified = { ...observed, id: "v1", periodStart: "2026-03-01", periodEnd: "2026-03-31", realizationState: "realized", verificationStatus: "verified", realizedUnits: 4, realizedValue: 200 };
+  const model = calculateValueModel({ ...base, evidence, snapshots: [observed, realized, verified] });
+  assert.equal(model.observedEconomicValue, 100);
+  assert.equal(model.realizedValue, 350);
+  assert.equal(model.verifiedRealizedValue, 200);
+});
+
+test("stale metric-derived inputs remain visible but flag model data quality", () => {
+  const model = calculateValueModel({ ...base, inputs: base.inputs.map((input, index) => index === 0 ? { ...input, derivation: "metric_latest_verified", metricId: "m1", measuredAt: "2026-01-01T00:00:00Z", stale: true } : input) });
+  assert.equal(model.valid, true);
+  assert.equal(model.dataQuality, "stale");
+  assert.equal(model.staleInputCount, 1);
+});
+
 test("illustrative dashboard totals keep estimates separate from verified value", () => {
   const labor = calculateValueModel({ ...base, recoverablePercentage: 80, expectedCapturePercentage: 75 });
   const revenue = calculateValueModel({ ...base, id: "revenue", benefitStreamKey: "revenue", recoverablePercentage: 80, expectedCapturePercentage: 75,

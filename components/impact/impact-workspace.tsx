@@ -26,10 +26,10 @@ export function ImpactWorkspace({ metrics, initialId, valueModels, economicSumma
       ? "Totals withheld · overlapping benefit streams"
       : `${economicSummary.eligibleModelCount} approved ${economicSummary.eligibleModelCount === 1 ? "model" : "models"}`;
   const kpis = [
-    { id: "verified", label: "Verified realized value", value: formatCurrency(economicSummary.verifiedRealizedValue, economicSummary.currencyCode), context: "Cumulative observed value. Annualized projections are excluded.", status: verifiedStatus, emphasis: true },
+    { id: "verified", label: "Verified realized value", value: formatCurrency(economicSummary.verifiedRealizedValue, economicSummary.currencyCode), context: "Cumulative value supported by authoritative evidence. Annualized projections are excluded.", status: verifiedStatus, emphasis: true },
+    { id: "realized", label: "Realized value", value: formatCurrency(economicSummary.realizedValue, economicSummary.currencyCode), context: "Recorded financial outcomes, including periods still awaiting authoritative verification.", status: economicSummary.realizedValue === null ? "pending" as const : "submitted" as const, stateLabel: "Realized" },
+    { id: "observed", label: "Observed economic value", value: formatCurrency(economicSummary.observedEconomicValue, economicSummary.currencyCode), context: "Evidence indicates an economic consequence, but financial reconciliation is incomplete.", status: economicSummary.observedEconomicValue === null ? "pending" as const : "observed" as const, stateLabel: "Observed" },
     { id: "expected", label: "Expected annual value", value: formatCurrency(economicSummary.expectedAnnualValue, economicSummary.currencyCode), context: `Modeled annual value after recoverability and expected capture · ${economicSummary.contributingCounts.expected} of ${economicSummary.eligibleModelCount} models complete.`, status: "pending" as const, stateLabel: "Expected" },
-    { id: "recoverable", label: "Recoverable annual estimate", value: formatCurrency(economicSummary.realisticallyRecoverable, economicSummary.currencyCode), context: `Documented addressable portion · ${economicSummary.contributingCounts.recoverable} of ${economicSummary.eligibleModelCount} models complete.`, status: "pending" as const, stateLabel: "Estimated" },
-    { id: "theoretical", label: "Theoretical annual ceiling", value: formatCurrency(economicSummary.theoreticalMaximum, economicSummary.currencyCode), context: `Maximum before recovery assumptions · ${economicSummary.contributingCounts.theoretical} of ${economicSummary.eligibleModelCount} models complete.`, status: "pending" as const, stateLabel: "Estimated" },
   ];
 
   return <main className="content analytics-content">
