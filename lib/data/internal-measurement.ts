@@ -1,7 +1,7 @@
 import { requireInternalUserContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
 import { demoImpactMetrics } from "@/lib/measurement/demo";
-import type { EvidenceStatus, ImpactMetric, MetricObservation } from "@/lib/measurement/types";
+import type { EvidenceStatus, ImpactMetric, MeasurementTrustState, MetricObservation } from "@/lib/measurement/types";
 import { safeEvidenceUrl } from "@/lib/security/safe-url";
 
 type Row = Record<string, unknown>;
@@ -46,7 +46,7 @@ export async function getInternalMeasurement(): Promise<{ metrics: ImpactMetric[
     rows(client, "measurement_metrics", "id,initiative_id,name,description,unit,improvement_direction,source_system_id,measurement_method,cadence,owner_membership_id,confidence_status,client_visible", organizationId),
     rows(client, "metric_baselines", "id,metric_id,value,period_start,period_end,source_description,evidence_id,verification_status", organizationId),
     rows(client, "metric_targets", "id,metric_id,value,target_date,rationale", organizationId),
-    rows(client, "metric_observations", "id,metric_id,measured_value,measured_at,period_start,period_end,source_description,evidence_id,verification_status", organizationId),
+    rows(client, "metric_observations", "id,metric_id,measured_value,measured_at,period_start,period_end,source_description,source_reference,sample_size,evidence_id,verification_status,measurement_status,client_visible", organizationId),
     rows(client, "measurement_evidence", "id,metric_id,source_type,source_reference,document_url,description,verification_status,client_visible", organizationId),
     rows(client, "value_evidence", "id,model_id,source_type,source_reference,document_url,description,verification_status,client_visible", organizationId),
     rows(client, "value_models", "id,name", organizationId),
@@ -68,6 +68,8 @@ export async function getInternalMeasurement(): Promise<{ metrics: ImpactMetric[
       .filter((item) => item.metric_id === id && item.verification_status === "verified" && verifiedEvidenceIds.has(String(item.evidence_id)))
       .sort((a, b) => String(b.measured_at).localeCompare(String(a.measured_at)));
     const current = verifiedObservations[0];
+    const latestObserved = observations.filter((item) => item.metric_id === id && (item.measurement_status === "observed" || item.measurement_status === "verified"))
+      .sort((a, b) => String(b.measured_at).localeCompare(String(a.measured_at)))[0];
     const currentEvidence = evidenceById.get(String(current?.evidence_id));
     const metricObservations: MetricObservation[] = observations
       .filter((item) => item.metric_id === id && (item.verification_status === "submitted" || item.verification_status === "verified"))
@@ -80,6 +82,8 @@ export async function getInternalMeasurement(): Promise<{ metrics: ImpactMetric[
           verificationStatus: status(item.verification_status), evidenceStatus: status(sourceEvidence?.verification_status),
           evidenceDescription: text(sourceEvidence?.description) ?? text(sourceEvidence?.source_reference),
           evidenceUrl: safeEvidenceUrl(sourceEvidence?.document_url),
+          measurementStatus: (text(item.measurement_status) ?? (item.verification_status === "verified" ? "verified" : "unverified")) as MeasurementTrustState,
+          sampleSize: numeric(item.sample_size), sourceReference: text(item.source_reference),
         };
       })
       .filter((item) => Number.isFinite(item.value))
@@ -94,8 +98,11 @@ export async function getInternalMeasurement(): Promise<{ metrics: ImpactMetric[
       baselineStatus: baseline ? "verified" : status(baselineRows[0]?.verification_status),
       targetValue: target ? numeric(target.value) : null, targetDate: text(target?.target_date),
       currentValue: current ? numeric(current.measured_value) : null,
-      measurementPeriod: current ? period(current.period_start, current.period_end) : null,
-      source: text(current?.source_description) ?? text(system?.name) ?? text(baseline?.source_description),
+      latestObservedValue: latestObserved ? numeric(latestObserved.measured_value) : null,
+      latestObservedAt: text(latestObserved?.measured_at),
+      latestObservedStatus: latestObserved ? (text(latestObserved.measurement_status) as MeasurementTrustState) : null,
+      measurementPeriod: latestObserved ? period(latestObserved.period_start, latestObserved.period_end) : null,
+      source: text(latestObserved?.source_reference) ?? text(latestObserved?.source_description) ?? text(system?.name) ?? text(baseline?.source_description),
       measurementMethod: text(metric.measurement_method), cadence: text(metric.cadence),
       evidenceConfidence: metric.confidence_status as ImpactMetric["evidenceConfidence"],
       evidenceDescription: text(currentEvidence?.description) ?? text(currentEvidence?.source_reference),

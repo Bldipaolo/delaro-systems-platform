@@ -2,6 +2,7 @@ import { isSupabaseConfigured, requireCurrentUserContext, requireInternalUserCon
 import { canViewInternalWorkspace } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import type { ClientWorkflow, ClientWorkflowDetail, ExecutionStatus, WorkflowExecution } from "@/lib/workflow-observability/types";
+import { getClientImpact } from "@/lib/data/impact";
 
 type Row = Record<string, unknown>;
 export type InternalWorkflow = ClientWorkflow & {
@@ -90,7 +91,7 @@ export async function getClientWorkflow(workflowId: string, page = 1, pageSize =
     const start = (page - 1) * pageSize;
     const executionTotal = workflow.executions.length;
     return { ...workflow, executions: workflow.executions.slice(start, start + pageSize), executionTotal,
-      executionPage: page, executionPageSize: pageSize, executionPageCount: Math.max(1, Math.ceil(executionTotal / pageSize)) };
+      executionPage: page, executionPageSize: pageSize, executionPageCount: Math.max(1, Math.ceil(executionTotal / pageSize)), businessMetrics: [] };
   }
   const context = await requireCurrentUserContext();
   const client = await createClient();
@@ -98,15 +99,21 @@ export async function getClientWorkflow(workflowId: string, page = 1, pageSize =
   const safePage = Math.max(1, Math.floor(page));
   const safePageSize = Math.min(50, Math.max(10, Math.floor(pageSize)));
   const from = (safePage - 1) * safePageSize;
-  const { data, error, count } = await client.from("workflow_executions")
+  const [{ data, error, count }, linkResult, impactMetrics] = await Promise.all([client.from("workflow_executions")
     .select("id,workflow_id,external_execution_id,status,started_at,finished_at,duration_ms,error_code,error_summary,monitoring_source,last_event_at,last_received_at", { count: "exact" })
     .eq("organization_id", context.organization.id).eq("workflow_id", workflowId)
-    .order("last_event_at", { ascending: false }).range(from, from + safePageSize - 1);
+    .order("last_event_at", { ascending: false }).range(from, from + safePageSize - 1),
+    client.from("workflow_metrics").select("metric_id").eq("organization_id", context.organization.id).eq("workflow_id", workflowId),
+    getClientImpact(),
+  ]);
   if (error) throw new Error(`Unable to load workflow execution history: ${error.message}`);
+  if (linkResult.error) throw new Error(`Unable to load workflow business measures: ${linkResult.error.message}`);
+  const linkedMetricIds = new Set((linkResult.data ?? []).map((item) => item.metric_id));
   const executionTotal = count ?? 0;
   return { ...workflow, executions: ((data ?? []) as unknown as Row[]).map(execution), executionTotal,
     executionPage: safePage, executionPageSize: safePageSize,
-    executionPageCount: Math.max(1, Math.ceil(executionTotal / safePageSize)) };
+    executionPageCount: Math.max(1, Math.ceil(executionTotal / safePageSize)),
+    businessMetrics: impactMetrics.filter((metric) => linkedMetricIds.has(metric.id)) };
 }
 
 export async function getClientWorkflowExecution(workflowId: string, executionId: string) {

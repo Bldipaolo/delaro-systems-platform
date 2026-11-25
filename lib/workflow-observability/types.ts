@@ -41,6 +41,7 @@ export type ClientWorkflowDetail = ClientWorkflow & {
   executionPage: number;
   executionPageSize: number;
   executionPageCount: number;
+  businessMetrics: import("@/lib/measurement/types").ImpactMetric[];
 };
 
 export type ConnectionState = "connected" | "degraded" | "stale" | "disconnected" | "disabled";

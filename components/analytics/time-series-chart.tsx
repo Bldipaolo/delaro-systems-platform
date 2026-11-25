@@ -50,7 +50,7 @@ export function TimeSeriesChart({
       </g>)}
       <text x="54" y="232">{formatDate(points[0].date)}</text><text x="680" y="232" textAnchor="end">{formatDate(points.at(-1)?.date ?? null)}</text>
     </svg></div>
-    <div className="analytics-chart-legend" aria-hidden="true"><span><i className="legend-verified"/>Verified</span>{points.some((item) => item.status === "submitted") && <span><i className="legend-submitted"/>Submitted, not verified</span>}</div>
+    <div className="analytics-chart-legend" aria-hidden="true"><span><i className="legend-verified"/>Verified</span>{points.some((item) => item.status === "observed") && <span><i className="legend-observed"/>Observed, not verified</span>}{points.some((item) => item.status === "submitted") && <span><i className="legend-submitted"/>Submitted, not verified</span>}</div>
     <details className="analytics-chart-data"><summary>View measurement data</summary><div className="metric-table-wrap"><table><caption>Historical measurements</caption><thead><tr><th>Period</th><th>Value</th><th>Status</th></tr></thead><tbody>{points.map((point) => <tr key={point.id}><td>{point.label}</td><td>{valueFormatter(point.value)}</td><td>{point.status}</td></tr>)}</tbody></table></div></details>
   </div>;
 }

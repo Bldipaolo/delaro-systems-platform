@@ -1,7 +1,7 @@
 import { requireCurrentUserContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
 import { demoImpactMetrics } from "@/lib/measurement/demo";
-import type { EvidenceStatus, ImpactMetric, MetricObservation } from "@/lib/measurement/types";
+import type { EvidenceStatus, ImpactMetric, MeasurementTrustState, MetricObservation } from "@/lib/measurement/types";
 import { safeEvidenceUrl } from "@/lib/security/safe-url";
 
 type Row = Record<string, unknown>;
@@ -45,7 +45,7 @@ export async function getClientImpact(): Promise<ImpactMetric[]> {
     rows(client, "measurement_metrics", "id,organization_id,initiative_id,process_id,process_step_id,name,description,unit,improvement_direction,source_system_id,measurement_method,cadence,owner_membership_id,confidence_status,client_visible", organizationId),
     rows(client, "metric_baselines", "id,organization_id,metric_id,value,period_start,period_end,source_description,evidence_id,verification_status", organizationId),
     rows(client, "metric_targets", "id,organization_id,metric_id,value,target_date,rationale", organizationId),
-    rows(client, "metric_observations", "id,organization_id,metric_id,measured_value,measured_at,period_start,period_end,source_description,evidence_id,verification_status", organizationId),
+    rows(client, "metric_observations", "id,organization_id,metric_id,measured_value,measured_at,period_start,period_end,source_description,source_reference,sample_size,evidence_id,verification_status,measurement_status,client_visible", organizationId),
     rows(client, "measurement_evidence", "id,organization_id,metric_id,source_type,source_reference,document_url,description,verification_status,client_visible", organizationId),
     rows(client, "operational_people", "id,organization_id,membership_id,display_name,client_visible", organizationId),
     rows(client, "systems", "id,organization_id,name,client_visible", organizationId),
@@ -61,6 +61,8 @@ export async function getClientImpact(): Promise<ImpactMetric[]> {
       .filter((row) => row.metric_id === id && row.verification_status === "verified" && verifiedEvidence.has(row.evidence_id))
       .sort((a, b) => String(b.measured_at).localeCompare(String(a.measured_at)))[0];
     const currentEvidence = verifiedEvidence.get(current?.evidence_id);
+    const latestObserved = observations.filter((row) => row.metric_id === id && (row.measurement_status === "observed" || row.measurement_status === "verified"))
+      .sort((a, b) => String(b.measured_at).localeCompare(String(a.measured_at)))[0];
     const metricObservations: MetricObservation[] = observations
       // Client roles receive only published verified rows. Internal roles can inspect submitted rows
       // in the same presentation without weakening the RLS publication boundary.
@@ -79,6 +81,8 @@ export async function getClientImpact(): Promise<ImpactMetric[]> {
           evidenceStatus: evidenceStatus(itemEvidence?.verification_status),
           evidenceDescription: textValue(itemEvidence?.description) ?? textValue(itemEvidence?.source_reference),
           evidenceUrl: safeEvidenceUrl(itemEvidence?.document_url),
+          measurementStatus: (textValue(row.measurement_status) ?? (row.verification_status === "verified" ? "verified" : "unverified")) as MeasurementTrustState,
+          sampleSize: numberValue(row.sample_size), sourceReference: textValue(row.source_reference),
         };
       })
       .filter((item) => Number.isFinite(item.value))
@@ -93,8 +97,11 @@ export async function getClientImpact(): Promise<ImpactMetric[]> {
       baselineStatus: baseline ? "verified" : "pending",
       targetValue: target ? numberValue(target.value) : null, targetDate: textValue(target?.target_date),
       currentValue: current ? numberValue(current.measured_value) : null,
-      measurementPeriod: current ? period(current.period_start, current.period_end) : null,
-      source: textValue(current?.source_description) ?? textValue(system?.name) ?? textValue(baseline?.source_description),
+      latestObservedValue: latestObserved ? numberValue(latestObserved.measured_value) : null,
+      latestObservedAt: textValue(latestObserved?.measured_at),
+      latestObservedStatus: latestObserved ? (textValue(latestObserved.measurement_status) as MeasurementTrustState) : null,
+      measurementPeriod: latestObserved ? period(latestObserved.period_start, latestObserved.period_end) : null,
+      source: textValue(latestObserved?.source_reference) ?? textValue(latestObserved?.source_description) ?? textValue(system?.name) ?? textValue(baseline?.source_description),
       measurementMethod: textValue(metric.measurement_method), cadence: textValue(metric.cadence),
       evidenceConfidence: metric.confidence_status as ImpactMetric["evidenceConfidence"],
       evidenceDescription: textValue(currentEvidence?.description) ?? textValue(currentEvidence?.source_reference),

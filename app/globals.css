@@ -1183,6 +1183,8 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
 .analytics-state[data-state="verified"] { color: var(--color-sea-glass-ink); }
 .analytics-state[data-state="verified"]::before { background: var(--color-sea-glass); border-color: var(--color-sea-glass); }
 .analytics-state[data-state="submitted"] { color: var(--color-slate); }
+.analytics-state[data-state="observed"] { color: var(--color-sea-glass-ink); }
+.analytics-state[data-state="observed"]::before { background: color-mix(in srgb, var(--color-sea-glass) 34%, transparent); border-color: var(--color-sea-glass); }
 .analytics-state[data-state="rejected"] { color: var(--color-danger); }
 .analytics-method-note { margin: 14px 0 0; color: var(--color-muted); font-size: 11px; line-height: 1.6; }
 .analytics-method-note strong { color: var(--color-slate); font-weight: 600; }
@@ -1201,10 +1203,12 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
 .analytics-series-point { vector-effect: non-scaling-stroke; }
 .analytics-series-point-verified { fill: var(--color-sea-glass); stroke: var(--color-warm-white); stroke-width: 2; }
 .analytics-series-point-submitted { fill: var(--color-warm-white); stroke: var(--color-slate); stroke-width: 1.5; }
+.analytics-series-point-observed { fill: color-mix(in srgb, var(--color-sea-glass) 28%, var(--color-warm-white)); stroke: var(--color-sea-glass-ink); stroke-width: 1.5; }
 .analytics-chart-legend, .financial-breakdown-legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 10px; color: var(--color-muted); font-size: 10px; }
 .analytics-chart-legend span, .financial-breakdown-legend span { display: inline-flex; align-items: center; gap: 7px; }
 .analytics-chart-legend i, .financial-breakdown-legend i { display: inline-block; width: 15px; height: 2px; background: var(--color-sea-glass-ink); }
 .analytics-chart-legend .legend-submitted { height: 8px; width: 8px; border: 1px solid var(--color-slate); border-radius: 50%; background: transparent; }
+.analytics-chart-legend .legend-observed { height: 8px; width: 8px; border: 1px solid var(--color-sea-glass-ink); border-radius: 50%; background: color-mix(in srgb, var(--color-sea-glass) 28%, transparent); }
 .analytics-chart-data { margin-top: 14px; border-top: 1px solid var(--color-border); }
 .analytics-chart-data > summary { width: fit-content; padding: 11px 0; color: var(--color-slate); cursor: pointer; font-size: 10px; text-decoration: underline; text-underline-offset: 3px; }
 .analytics-chart-data table { width: 100%; border-collapse: collapse; font-size: 10px; }

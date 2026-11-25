@@ -7,7 +7,7 @@ export type AnalyticsSeriesPoint = {
   date: string;
   label: string;
   value: number;
-  status: "submitted" | "verified";
+  status: "submitted" | "observed" | "verified";
 };
 
 export type RealizedValuePoint = AnalyticsSeriesPoint & {
@@ -26,16 +26,16 @@ export function buildMetricSeries(observations: MetricObservation[]): AnalyticsS
       date: item.periodEnd ?? item.measuredAt,
       label: item.periodLabel ?? item.measuredAt,
       value: item.value,
-      status: item.verificationStatus as "submitted" | "verified",
+      status: item.measurementStatus === "observed" ? "observed" : item.verificationStatus as "submitted" | "verified",
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function metricWorkflowState(metric: ImpactMetric): "pending" | "submitted" | "verified" {
+export function metricWorkflowState(metric: ImpactMetric): "pending" | "submitted" | "observed" | "verified" {
   const newestSubmitted = metric.observations
     .filter((item) => item.verificationStatus === "submitted")
     .sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))[0];
-  if (newestSubmitted && (!metric.lastMeasuredAt || newestSubmitted.measuredAt > metric.lastMeasuredAt)) return "submitted";
+  if (newestSubmitted && (!metric.lastMeasuredAt || newestSubmitted.measuredAt > metric.lastMeasuredAt)) return newestSubmitted.measurementStatus === "observed" ? "observed" : "submitted";
   return metric.currentValue !== null ? "verified" : "pending";
 }
 

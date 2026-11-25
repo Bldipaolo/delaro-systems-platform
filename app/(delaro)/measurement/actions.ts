@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireInternalUserContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
+import { createMetricIntegrationToken } from "@/lib/measurement/ingestion";
 
 const optionalUuid = z.union([z.string().uuid(), z.literal("")]);
 const amount = z.string().trim().regex(/^-?\d+(?:\.\d+)?$/).transform(Number).pipe(z.number().finite());
@@ -25,18 +26,21 @@ export async function saveMetric(formData: FormData) {
   const input = z.object({
     name: z.string().trim().min(2).max(160), description: z.string().trim().max(2000),
     unit: z.string().trim().min(1).max(40), improvementDirection: z.enum(["increase","decrease","target"]),
+    metricType: z.enum(["duration","percentage","count","currency","rate","ratio","other"]),
     processId: optionalUuid, initiativeId: optionalUuid,
     measurementMethod: z.string().trim().max(2000), cadence: z.string().trim().max(120),
-    clientVisible: z.string().optional(),
+    clientVisible: z.string().optional(), autoPublishObservations: z.string().optional(),
   }).parse(Object.fromEntries(formData));
   if (!input.processId && !input.initiativeId) throw new Error("Link the measure to a process or improvement.");
   const { client, organizationId, membershipId } = await workspace();
   const { error } = await client.from("measurement_metrics").insert({
     organization_id: organizationId, name: input.name, description: input.description || null, unit: input.unit,
     improvement_direction: input.improvementDirection,
+    metric_type: input.metricType,
     process_id: input.processId || null, initiative_id: input.initiativeId || null,
     measurement_method: input.measurementMethod || null, cadence: input.cadence || null,
     owner_membership_id: membershipId, client_visible: input.clientVisible === "on",
+    auto_publish_observations: input.autoPublishObservations === "on",
   });
   if (error) { console.error("Metric save failed", { code: error.code }); throw new Error("Unable to save this metric."); }
   refresh();
@@ -131,4 +135,27 @@ export async function reviewMetricResult(formData: FormData) {
   if (error) { console.error("Measurement review failed", { table, code: error.code }); throw new Error("Unable to review this result. Check that its evidence is verified and client-visible."); }
   if (!data) throw new Error("This result is no longer awaiting review.");
   refresh();
+}
+
+export type MetricCredentialState = { token: string | null; error: string | null };
+
+export async function rotateMetricCredential(_: MetricCredentialState, formData: FormData): Promise<MetricCredentialState> {
+  const parsed = z.object({
+    metricId: z.string().uuid(), workflowId: optionalUuid,
+    label: z.string().trim().min(2).max(160), rateLimit: z.coerce.number().int().min(1).max(600),
+  }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { token: null, error: "Review the metric reporter settings." };
+  const { client, organizationId } = await workspace();
+  const { data: metric } = await client.from("measurement_metrics").select("id").eq("organization_id", organizationId).eq("id", parsed.data.metricId).maybeSingle();
+  if (!metric) return { token: null, error: "Metric not found in this organization." };
+  const credential = createMetricIntegrationToken();
+  const { error } = await client.rpc("rotate_metric_ingestion_credential", {
+    target_metric_id: parsed.data.metricId, target_workflow_id: parsed.data.workflowId || null,
+    new_credential_id: credential.credentialId, new_secret_hash: credential.secretHash,
+    new_token_hint: credential.tokenHint, credential_label: parsed.data.label,
+    credential_rate_limit: parsed.data.rateLimit,
+  });
+  if (error) { console.error("Metric credential rotation failed", { code: error.code }); return { token: null, error: "Unable to create this scoped reporting credential." }; }
+  revalidatePath("/measurement");
+  return { token: credential.token, error: null };
 }

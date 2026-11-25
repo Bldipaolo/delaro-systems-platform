@@ -1,0 +1,29 @@
+{
+  "name": "Delaro — Report Metric Observation",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://delaro-systems-platform.vercel.app/api/integrations/n8n/measurements",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"eventId\": \"{{$execution.id}}-duration\",\n  \"value\": {{$json.durationMinutes}},\n  \"unit\": \"minutes\",\n  \"measuredAt\": \"{{$now.toISO()}}\",\n  \"sampleSize\": 1,\n  \"aggregation\": \"single execution\",\n  \"sourceReference\": \"n8n execution {{$execution.id}}\",\n  \"source\": \"n8n_metric_reporter\"\n}"
+      },
+      "id": "delaro-metric-reporter",
+      "name": "Report Metric to Delaro",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 240],
+      "credentials": { "httpHeaderAuth": { "id": "REPLACE_IN_N8N", "name": "Delaro Metric Reporter" } }
+    }
+  ],
+  "connections": {},
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "00000000-0000-4000-8000-000000000004",
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": []
+}

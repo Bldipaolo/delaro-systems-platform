@@ -6,6 +6,7 @@ import type { ClientWorkflow, ClientWorkflowDetail, WorkflowExecution } from "@/
 import { connectionState, durationLabel, statusLabel } from "@/lib/workflow-observability/types";
 import { workflowAnalytics, workflowAttention, type WorkflowPeriod } from "@/lib/workflow-observability/analytics";
 import { WorkflowRealtime } from "@/components/workflows/workflow-realtime";
+import { MetricComparisonTable } from "@/components/analytics/metric-comparison-table";
 
 const dateTime = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -84,6 +85,7 @@ export function WorkflowsOverview({ workflows, production }: { workflows: Client
 
 export function WorkflowDetail({ workflow, production }: { workflow: ClientWorkflowDetail; production: boolean }) {
   const [period, setPeriod] = useState<WorkflowPeriod>("30d");
+  const [selectedMetricId, setSelectedMetricId] = useState(workflow.businessMetrics[0]?.id ?? "");
   const analytics = workflowAnalytics([workflow], period);
   const failures = workflow.executions.filter((item) => item.status === "failed");
   return <main className="content workflows-page"><Link className="workflow-back" href="/workflows">← All workflows</Link>
@@ -91,6 +93,7 @@ export function WorkflowDetail({ workflow, production }: { workflow: ClientWorkf
     {workflow.demo && <div className="workflow-demo-note"><strong>Illustrative demo data</strong><span>This execution history is not a production record.</span></div>}
     <section className="workflow-command-summary"><div className="workflow-command-primary"><span>Latest outcome</span><strong className={`workflow-outcome-${workflow.lastExecutionStatus ?? "unknown"}`}>{statusLabel(workflow.lastExecutionStatus)}</strong><small>Last reported {observed(workflow.lastReportedAt)}</small></div><dl><div><dt>Reliability</dt><dd>{analytics.successRate === null ? "—" : `${(analytics.successRate * 100).toFixed(1)}%`}</dd></div><div><dt>Executions</dt><dd>{analytics.total}</dd></div><div><dt>Failures</dt><dd>{analytics.failed}</dd></div><div><dt>Average runtime</dt><dd>{durationLabel(analytics.averageDurationMs)}</dd></div></dl></section>
     <section className="workflow-performance"><div className="workflow-section-heading"><div><h2>Execution performance</h2><p>Outcome history for this workflow.</p></div><PeriodControl value={period} onChange={setPeriod}/></div><ReliabilityChart workflows={[workflow]} period={period}/></section>
+    <section className="workflow-performance" aria-labelledby="workflow-business-performance"><div className="workflow-section-heading"><div><h2 id="workflow-business-performance">Business performance</h2><p>Linked operating measures remain separate from technical execution health. Observed values are not presented as verified.</p></div><Link href="/impact">Open Impact →</Link></div>{workflow.businessMetrics.length ? <MetricComparisonTable metrics={workflow.businessMetrics} selectedId={selectedMetricId} onSelect={setSelectedMetricId}/> : <div className="workflow-empty"><h2>No business measure published</h2><p>Execution monitoring is live, but a baseline, target, and client-visible metric have not yet been connected.</p></div>}</section>
     {failures.length > 0 && <section className="workflow-warning" aria-labelledby="workflow-warning-heading"><span>Requires attention</span><h2 id="workflow-warning-heading">{failures[0].errorSummary ?? "A workflow execution failed."}</h2><p>Recorded {observed(failures[0].lastEventAt)}. Review the source system and established support procedure before retrying.</p></section>}
     <section className="workflow-history" aria-labelledby="workflow-history-heading"><div className="workflow-section-heading"><div><h2 id="workflow-history-heading">Execution history</h2><p>{workflow.executionTotal} authenticated records</p></div><span>Page {workflow.executionPage} of {workflow.executionPageCount}</span></div>{workflow.executions.length ? workflow.executions.map((item) => <ExecutionRow execution={item} workflowId={workflow.id} key={item.id}/>) : <div className="workflow-empty"><h2>No execution events</h2><p>The workflow is registered, but Delaro has not received an authenticated execution report.</p></div>}{workflow.executionPageCount > 1 && <nav className="workflow-pagination" aria-label="Execution history pages">{workflow.executionPage > 1 && <Link href={`?page=${workflow.executionPage - 1}`}>← Newer</Link>}<span>{workflow.executionPage} / {workflow.executionPageCount}</span>{workflow.executionPage < workflow.executionPageCount && <Link href={`?page=${workflow.executionPage + 1}`}>Older →</Link>}</nav>}</section>
   </main>;
