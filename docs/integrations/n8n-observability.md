@@ -107,4 +107,4 @@ Use a non-production workflow and, when possible, a dedicated test organization.
 - Some trigger-node failures may not expose an n8n execution ID. Those failures cannot be reliably correlated by this first integration pattern.
 - The HTTP reporter confirms that n8n sent an outcome; Delaro does not independently inspect the client’s n8n execution payload.
 - Supabase Realtime provides immediate updates when available. The client falls back to a 60-second refresh and exposes a manual refresh control.
-- Comprehensive monitoring is not established until both a real success and a real Error Trigger failure have been observed from the client-owned n8n instance.
+- The first comprehensive transport check is complete for `Test Email Agent`: a real success and a controlled automatic Error Trigger failure were both accepted. This verifies Delaro monitoring connectivity and workflow attribution; it does not prove the email agent's underlying business outcome.
