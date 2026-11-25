@@ -26,7 +26,7 @@ export function buildMetricSeries(observations: MetricObservation[]): AnalyticsS
       date: item.periodEnd ?? item.measuredAt,
       label: item.periodLabel ?? item.measuredAt,
       value: item.value,
-      status: item.measurementStatus === "observed" ? "observed" : item.verificationStatus as "submitted" | "verified",
+      status: (item.measurementStatus === "observed" ? "observed" : item.verificationStatus) as AnalyticsSeriesPoint["status"],
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
