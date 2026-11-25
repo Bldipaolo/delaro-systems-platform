@@ -37,9 +37,10 @@ test("only Delaro administrators can provision organizations or manage client me
   }
 });
 
-test("only the exact credential-authenticated ingestion endpoint bypasses session middleware", () => {
+test("only exact credential-authenticated ingestion endpoints bypass session middleware", () => {
   assert.equal(isUnauthenticatedServerEndpoint("/api/integrations/n8n/executions"), true);
-  for (const path of ["/api/integrations/n8n", "/api/integrations/n8n/executions/other", "/workflows", "/internal/workflows"]) {
+  assert.equal(isUnauthenticatedServerEndpoint("/api/integrations/n8n/measurements"), true);
+  for (const path of ["/api/integrations/n8n", "/api/integrations/n8n/executions/other", "/api/integrations/n8n/measurements/other", "/workflows", "/internal/workflows"]) {
     assert.equal(isUnauthenticatedServerEndpoint(path), false);
   }
 });
