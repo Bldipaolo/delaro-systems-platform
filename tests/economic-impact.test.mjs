@@ -100,6 +100,28 @@ test("labor capacity converts minutes to hours through a named safe formula", ()
   assert.equal(model.theoreticalMaximum, 200);
 });
 
+test("ROI and payback remain pending when no cost evidence exists", () => {
+  const model = calculateValueModel({
+    ...base,
+    recoverablePercentage: 100,
+    expectedCapturePercentage: 100,
+    inputs: [
+      { ...base.inputs[0], id: "minutes", key: "minutes", value: 4, unit: "minutes/email" },
+      { ...base.inputs[1], id: "volume", key: "volume", value: 100, unit: "emails/month" },
+      { ...base.inputs[2], id: "rate", key: "rate", value: 30, unit: "USD/hour" },
+      { ...base.inputs[0], id: "months", key: "months", value: 12, unit: "months/year" },
+    ],
+    formulaKind: "minutes_to_hours_product",
+    costs: [],
+  });
+  assert.equal(model.expectedAnnualValue, 2400);
+  assert.equal(model.annualizedCost, null);
+  assert.equal(model.firstYearCost, null);
+  assert.equal(model.modeledNetFirstYearValue, null);
+  assert.equal(model.modeledRoiPercentage, null);
+  assert.equal(model.modeledPaybackMonths, null);
+});
+
 test("observed, realized, and verified economic states remain distinct", () => {
   const evidence = [{ id: "e1", sourceType: "system_export", sourceReference: "Finance", description: null, documentUrl: null, verificationStatus: "verified" }];
   const observed = { id: "o1", periodStart: "2026-01-01", periodEnd: "2026-01-31", measuredAt: "2026-02-01T00:00:00Z", realizedUnits: 2, unitValue: 50, unitLabel: "hours", realizedValue: 100, annualizationFactor: null, annualizedRunRate: null, annualizationMethod: null, evidenceId: "e1", realizationState: "observed", verificationStatus: "submitted" };

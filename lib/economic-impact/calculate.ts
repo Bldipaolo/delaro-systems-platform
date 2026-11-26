@@ -90,14 +90,18 @@ export function calculateValueModel(model: ValueModel): CalculatedValueModel {
     ? realizedSnapshots.reduce((total, snapshot) => total + Math.round(snapshot.realizedValue * 100), 0) : null;
   const costs = model.costs ?? [];
   const modelCosts = costs.filter((cost) => cost.verificationStatus !== "rejected" && cost.currencyCode === model.currencyCode);
-  const annualizedCost = annualCost(modelCosts);
-  const oneTimeCost = sumMoney(modelCosts.filter((cost) => cost.cadence === "one_time").map((cost) => cost.amount));
+  const annualizedCost = modelCosts.length ? annualCost(modelCosts) : null;
+  const oneTimeCost = modelCosts.length
+    ? sumMoney(modelCosts.filter((cost) => cost.cadence === "one_time").map((cost) => cost.amount))
+    : null;
   const firstYearCost = annualizedCost === null || oneTimeCost === null ? null : annualizedCost + oneTimeCost;
   const expectedValue = dollars(expected);
   const modeledNet = expectedValue === null || firstYearCost === null ? null : expectedValue - firstYearCost;
   const roi = modeledNet === null || firstYearCost === null || firstYearCost <= 0 ? null : round((modeledNet / firstYearCost) * 100, 1);
   const monthlyNetBenefit = expectedValue === null || annualizedCost === null ? null : expectedValue / 12 - annualizedCost / 12;
-  const payback = oneTimeCost === null || monthlyNetBenefit === null || monthlyNetBenefit <= 0 ? null : round(oneTimeCost / monthlyNetBenefit, 1);
+  const payback = oneTimeCost === null || oneTimeCost <= 0 || monthlyNetBenefit === null || monthlyNetBenefit <= 0
+    ? null
+    : round(oneTimeCost / monthlyNetBenefit, 1);
   const staleInputCount = model.inputs.filter((input) => input.stale).length;
   return {
     ...model, valid,
