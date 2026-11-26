@@ -42,6 +42,11 @@ export type ImpactMetric = {
   latestObservedStatus: MeasurementTrustState | null;
   measurementPeriod: string | null;
   source: string | null;
+  sourceName?: string | null;
+  sourceStatus?: "draft" | "configured" | "healthy" | "stale" | "degraded" | "failed" | "authentication_required" | "disabled" | null;
+  sourceHealthSummary?: string | null;
+  sourceLastSuccessfulAt?: string | null;
+  sourceLastRecordAt?: string | null;
   measurementMethod: string | null;
   cadence: string | null;
   evidenceConfidence: "pending" | "limited" | "supported" | "verified";
