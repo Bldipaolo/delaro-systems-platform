@@ -1,8 +1,8 @@
-# Production readiness — Stage 1 acceptance
+# Production readiness acceptance record
 
-Updated 17 November 2026.
+Updated 26 November 2026.
 
-**Status: Stage 1 correctness and tenant-isolation controls pass at the database, authenticated Data API, and browser layers. Production invitation delivery remains a release blocker and was not claimed as tested.**
+**Status: The tested Stage 1–4C controls pass at the database, application, deployment, and authenticated browser layers. The platform is not yet unconditionally production-ready: live HubSpot acceptance, higher-frequency pull scheduling, leaked-password protection, dependency advisories, and the previously documented document-governance work remain open.**
 
 This record covers the Stage 1 hardening performed after commit `4c0e44b04dacd1499d1a7ad63e2bece09c8f1895` and the focused Stage 2 implementation-management verification appended below.
 
@@ -171,3 +171,51 @@ Applied Stage 3B migration:
 - `allow_service_telemetry_updates`
 
 The post-migration advisor found no new health or security finding. The existing client-safe `get_client_workflow_monitoring` warning and disabled leaked-password protection remain as documented above. Performance advice remains limited to pre-existing policy/index recommendations plus expected unused-index notices on newly created test-age indexes.
+
+## Stage 4C automated measurement sources — 26 November 2026
+
+Stage 4C extends the existing Stage 4A observation and Stage 4B value models. Provider data is normalized into the existing observation contract; raw provider payloads, client login credentials, and decrypted connector secrets are not retained in tenant-readable tables.
+
+| Control or journey | Result | Actual verification | Evidence / limitation |
+| --- | --- | --- | --- |
+| Measurement-source schema and tenant ownership | PASS | Applied all incremental Stage 4C migrations to Supabase project `qxebrulkxkdvovleoqao`; reran the Stage 4C schema SQL suite. | Every tenant-owned source, mapping, run, and observation relationship carries `organization_id`; composite relationships and RLS preserve tenant scope. |
+| Metric mapping and normalized ingestion | PASS | Ran `stage4c_mapping_ingestion.sql` plus unit tests for field access, direct values, differences, count, average, median, percentage, ratio, min, max, and duration behavior. | Mappings reject arbitrary code and unsafe provider paths. Raw provider records are discarded after bounded normalization. |
+| Idempotency and provenance | PASS | SQL replayed deterministic provider observations and asserted stable idempotency keys and source/mapping attribution. | Duplicate observations do not create duplicate measurements; each retained observation remains traceable to its source and mapping. |
+| Credential encryption and isolation | PASS | Unit tests exercised AES-256-GCM context binding, tampering, and invalid-key failures; live security SQL queried credential storage as authenticated roles. | `MEASUREMENT_SOURCE_ENCRYPTION_KEY` is a production-only Vercel secret. The private credential table has RLS enabled with no client policy; provider credentials remain service-only. |
+| Incremental cursor isolation | PASS | Live security SQL attempted authenticated cursor access; HubSpot adapter tests resumed from a private per-object cursor. | Cursor state is held in the private schema and is unavailable to browser roles. Current HubSpot synchronization is append-oriented; mutable-record reconciliation needs a later search/webhook strategy. |
+| Scheduler authorization | PASS | Production request without a credential returned `401`; one request with the in-memory production `CRON_SECRET` returned `200` and `{ok:true, claimed:0, succeeded:0}`. | Zero pull sources were due, so this proves scheduler authentication and claiming, not a live provider fetch. |
+| Retry and failure classification | PASS | Unit and SQL tests exercised bounded transient retry plus permanent authentication, authorization, mapping, and configuration failures. | Permanent failures stop automatic scheduling and require operator repair; client-safe status does not reveal provider details. |
+| HubSpot reference connector contract | PASS | Unit tests used bounded fixture responses for selected properties, pagination, cursor continuation, authorization failure, rate limiting, and record non-retention. | Uses the date-versioned CRM objects API with scoped Bearer authentication and a bounded object allowlist. |
+| Live HubSpot connection and sync | NOT TESTED | No HubSpot Service Key or client portal was authorized during this stage. | A read-only scoped Service Key, source registration, mapping, initial synchronization, and reconciliation against the source portal remain required before claiming live HubSpot connectivity. |
+| Existing n8n measurement compatibility | PASS | Reran `stage3a_workflow_observability.sql`, `stage4a_metric_ingestion.sql`, and authenticated production browser acceptance. | Atlantic Operations Group displayed `Test Email Agent` as healthy with one active `Email processing duration` mapping and its latest authenticated record. Existing push ingestion remains compatible. |
+| Cross-tenant and suspended-user isolation | PASS | Live rollback security SQL switched JWT subjects across tenants and to a suspended membership. | Foreign and suspended users received no source, mapping, credential, cursor, or run access; unauthorized writes were rejected. |
+| Client Impact trust states | PASS | Authenticated production browser acceptance at `/impact`. | Verified realized value remained pending with zero verified periods; estimated annual value, illustrative assumptions, source health, evidence status, and measurement dates were visibly distinct. Unverified values were not presented as actual results. |
+| Internal source-management UX | PASS | Authenticated production browser acceptance at `/internal/data-sources` for Delaro Systems and Atlantic Operations Group. | Tenant selector, draft-source form, source summary, health, mappings, and sync-history controls rendered. No credential value was exposed. |
+| Mobile acceptance | PASS | Browser viewport set to 390 × 844 for Impact and internal Data Sources; inspected navigation and document dimensions. | Both pages had `documentWidth=379` inside a 390px viewport with no page-level horizontal overflow; mobile navigation opened and remained keyboard/AX discoverable. |
+| Browser console | PASS | Read production browser error logs after desktop and mobile acceptance. | No browser console errors were recorded. |
+| Unit suite | PASS | `npm test` in a clean checkout. | 69 passed, 0 failed. |
+| TypeScript | PASS | `npm run typecheck` in the same clean checkout. | Exit code 0. The live Documents workspace separately exhibited a file-provider stall, so the clean checkout is the authoritative result. |
+| Production build | PASS | `npm run build` in a clean checkout with the configured public Supabase environment, followed by Vercel's Node 24 build. | Next.js 15.5.29 generated 38 routes, including `/internal/data-sources` and `/api/measurement-sources/sync`. |
+| SQL regression suites | PASS | Executed `pilot_rls.sql`, `stage3a_workflow_observability.sql`, `stage4a_metric_ingestion.sql`, `stage4b_economic_impact.sql`, `stage4c_measurement_sources.sql`, `stage4c_mapping_ingestion.sql`, `stage4c_sync_health.sql`, and `stage4c_security_hardening.sql`. | All assertions passed against the connected project; test fixtures rolled back. |
+| Vercel production deployment | PASS | Git deployment, redeployment after secret rotation, production HTTP smoke, authenticated scheduler call, and runtime error scan. | Source deployment for commit `12d808c5ba804b2c534c511a47cfdc72d640c16b` reached `READY`; final production redeployment `dpl_CXWXD4yrsyQbdXmf9BLvSjLTNZxF` reached `READY`; `/login` returned `200`; the internal route redirected unauthenticated access; no error/fatal runtime logs appeared in the checked 15-minute window. |
+
+Applied Stage 4C migrations:
+
+- `stage4c_measurement_sources`
+- `stage4c_measurement_source_indexes`
+- `stage4c_metric_mappings_and_ingestion`
+- `stage4c_workflow_source_trigger_fix`
+- `stage4c_mapping_indexes`
+- `stage4c_sync_health_and_retries`
+- `stage4c_sync_claim_conflict_fix`
+- `stage4c_manual_sync_rpc_fix`
+- `stage4c_security_and_connector_hardening`
+
+Stage 4C release limitations and follow-up:
+
+1. Complete a genuine HubSpot sync with a least-privilege Service Key and reconcile the resulting observations against the source portal.
+2. The current Vercel Hobby plan permits only daily cron execution. Production is scheduled for 06:15 UTC; tighter freshness requires Vercel Pro or an external scheduler authenticated with `CRON_SECRET`.
+3. HubSpot cursoring is append-oriented. Record updates, deletions, and historical backfill need an explicit search, webhook, or bounded re-scan design before those cases are promised.
+4. Add operator-facing backfill controls and external alert delivery for repeated source failures. Current failure state and sanitized summaries are visible internally, but alerts are not pushed outside Delaro.
+5. Enable Supabase leaked-password protection and retain the documented client-safe `get_client_workflow_monitoring` `SECURITY DEFINER` review.
+6. `npm audit --omit=dev` still reports one moderate Next.js advisory path and one high PostCSS advisory. The automated remediation is a semver-major Next.js 16 upgrade and was not introduced during this focused stage.
