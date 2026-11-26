@@ -1,6 +1,7 @@
 export function isUnauthenticatedServerEndpoint(pathname: string) {
   return pathname === "/api/integrations/n8n/executions"
-    || pathname === "/api/integrations/n8n/measurements";
+    || pathname === "/api/integrations/n8n/measurements"
+    || pathname === "/api/measurement-sources/sync";
 }
 
 export function isPublicIntegrationAsset(pathname: string) {

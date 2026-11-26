@@ -20,3 +20,8 @@ test("public template rule does not expose application or API routes", () => {
   assert.equal(isPublicIntegrationAsset("/api/integrations/n8n/executions"), false);
   assert.equal(isPublicIntegrationAsset("/internal/workflows"), false);
 });
+
+test("only credential-authenticated machine endpoints bypass session middleware", () => {
+  assert.match(source, /\/api\/measurement-sources\/sync/);
+  assert.doesNotMatch(source, /startsWith\("\/api\/"\)/);
+});
