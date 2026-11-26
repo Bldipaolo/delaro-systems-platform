@@ -1,0 +1,2 @@
+create index measurement_source_ingestion_events_metric_idx
+  on public.measurement_source_ingestion_events (organization_id,metric_id);
