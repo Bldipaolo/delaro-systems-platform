@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireInternalUserContext } from "@/lib/auth/context";
 import { canViewInternalWorkspace } from "@/lib/auth/permissions";
+import { assertHubSpotObjectType, hubSpotObjectTypes, testHubSpotConnection } from "@/lib/measurement-sources/providers/hubspot";
+import { deleteMeasurementSourceSecret, storeHubSpotSourceSecret } from "@/lib/measurement-sources/secrets";
 import { createClient } from "@/lib/supabase/server";
+
+export type HubSpotConnectionState = { error: string | null; success: string | null };
 
 const optionalText = z.string().trim().max(1200).transform((value) => value || null);
 const fieldPath = z.string().trim().min(1).max(240).regex(/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*$/);
@@ -52,10 +56,11 @@ export async function createMetricMapping(formData: FormData) {
   }).parse(Object.fromEntries(formData));
   const client = await workspace(input.organizationId);
   const [{ data: source },{ data: metric }] = await Promise.all([
-    client.from("measurement_sources").select("id").eq("organization_id",input.organizationId).eq("id",input.sourceId).maybeSingle(),
+    client.from("measurement_sources").select("id,provider_type").eq("organization_id",input.organizationId).eq("id",input.sourceId).maybeSingle(),
     client.from("measurement_metrics").select("id").eq("organization_id",input.organizationId).eq("id",input.metricId).maybeSingle(),
   ]);
   if (!source || !metric) throw new Error("The selected source or measure is unavailable.");
+  if (source.provider_type === "hubspot") assertHubSpotObjectType(input.providerObject);
   const { error } = await client.from("measurement_source_mappings").insert({
     organization_id: input.organizationId, source_id: input.sourceId, metric_id: input.metricId, name: input.name,
     provider_object: input.providerObject, value_field: input.valueField, timestamp_field: input.timestampField,
@@ -64,6 +69,75 @@ export async function createMetricMapping(formData: FormData) {
     client_visible: input.clientVisible === "on",
   });
   if (error) throw new Error(error.code === "23505" ? "This source already has an active mapping for the selected measure." : "Unable to save the metric mapping.");
+  revalidatePath("/internal/data-sources");
+  revalidatePath("/impact");
+}
+
+export async function connectHubSpotSource(
+  _state: HubSpotConnectionState,
+  formData: FormData,
+): Promise<HubSpotConnectionState> {
+  const input = z.object({
+    organizationId: z.string().uuid(),
+    sourceId: z.string().uuid(),
+    accessToken: z.string().trim().min(20).max(4000),
+    testObject: z.enum(hubSpotObjectTypes),
+    scheduleIntervalMinutes: z.coerce.number().int().min(15).max(10080),
+  }).safeParse(Object.fromEntries(formData));
+  if (!input.success) return { error: "Enter a valid scoped HubSpot Service Key and connection settings.", success: null };
+
+  try {
+    const client = await workspace(input.data.organizationId);
+    const { data: source, error: sourceError } = await client.from("measurement_sources")
+      .select("id,organization_id,provider_type,status")
+      .eq("organization_id", input.data.organizationId).eq("id", input.data.sourceId).maybeSingle();
+    if (sourceError || !source || source.provider_type !== "hubspot" || source.status === "disabled") {
+      return { error: "This HubSpot source is unavailable.", success: null };
+    }
+
+    const objectType = assertHubSpotObjectType(input.data.testObject);
+    const verified = await testHubSpotConnection(input.data.accessToken, objectType);
+    await storeHubSpotSourceSecret(source.id, source.organization_id, input.data.accessToken);
+    const { error: updateError } = await client.from("measurement_sources").update({
+      status: "configured",
+      schedule_enabled: true,
+      schedule_interval_minutes: input.data.scheduleIntervalMinutes,
+      next_sync_at: new Date().toISOString(),
+      health_summary: "Credential verified; awaiting the first successful measurement sync",
+      consecutive_failures: 0,
+      public_configuration: {
+        connection_test_object: verified.objectType,
+        provider_api_version: verified.apiVersion,
+        credential_kind: "service_key",
+      },
+    }).eq("organization_id", input.data.organizationId).eq("id", input.data.sourceId);
+    if (updateError) {
+      await deleteMeasurementSourceSecret(source.id);
+      return { error: "HubSpot accepted the credential, but Delaro could not complete the connection safely.", success: null };
+    }
+    revalidatePath("/internal/data-sources");
+    return { error: null, success: `HubSpot access to ${verified.objectType} is verified. The source is configured and awaiting its first measurement sync.` };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "HubSpot connection verification failed.", success: null };
+  }
+}
+
+export async function disconnectHubSpotSource(formData: FormData) {
+  const input = z.object({ organizationId: z.string().uuid(), sourceId: z.string().uuid() })
+    .parse(Object.fromEntries(formData));
+  const client = await workspace(input.organizationId);
+  const { data: source } = await client.from("measurement_sources").select("id,provider_type")
+    .eq("organization_id", input.organizationId).eq("id", input.sourceId).maybeSingle();
+  if (!source || source.provider_type !== "hubspot") throw new Error("This HubSpot source is unavailable.");
+  await deleteMeasurementSourceSecret(source.id);
+  const { error } = await client.from("measurement_sources").update({
+    status: "draft",
+    schedule_enabled: false,
+    next_sync_at: null,
+    health_summary: "Connection removed; a new scoped credential is required",
+    public_configuration: {},
+  }).eq("organization_id", input.organizationId).eq("id", input.sourceId);
+  if (error) throw new Error("The credential was revoked, but the source record could not be reset.");
   revalidatePath("/internal/data-sources");
   revalidatePath("/impact");
 }
