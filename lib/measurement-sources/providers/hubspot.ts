@@ -92,15 +92,20 @@ export async function fetchHubSpotRecords(
   objectType: HubSpotObjectType,
   properties: string[],
   request: FetchLike = fetch,
+  startingAfter?: string,
 ) {
   const records: ProviderRecord[] = [];
-  let after: string | undefined;
+  let after: string | undefined = startingAfter;
+  let cursor = startingAfter ?? null;
   let pages = 0;
   do {
     const page = await fetchPage(accessToken, objectType, properties, after, request);
-    records.push(...page.results.slice(0, maximumRecords - records.length));
+    const accepted = page.results.slice(0, maximumRecords - records.length);
+    records.push(...accepted);
+    const lastId = accepted.at(-1)?.id;
+    if (typeof lastId === "string" || typeof lastId === "number") cursor = String(lastId);
     after = page.paging?.next?.after;
     pages += 1;
   } while (after && pages < maximumPages && records.length < maximumRecords);
-  return { records, cursor: after ?? null, truncated: Boolean(after) };
+  return { records, cursor, truncated: Boolean(after) };
 }

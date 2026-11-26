@@ -23,6 +23,8 @@ export type ValueInput = {
   measuredAt?: string | null;
   staleAfterDays?: number | null;
   stale?: boolean;
+  sourceName?: string | null;
+  sourceStatus?: "draft" | "configured" | "healthy" | "stale" | "degraded" | "failed" | "authentication_required" | "disabled" | null;
   sensitivityLow?: number | null;
   sensitivityHigh?: number | null;
 };

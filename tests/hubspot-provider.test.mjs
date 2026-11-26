@@ -36,6 +36,18 @@ test("HubSpot adapter requests only mapped fields and follows bounded pagination
   assert.match(requests[0].url.pathname, /\/crm\/objects\/2026-03\/deals/);
   assert.equal(requests[0].url.searchParams.get("properties"), "amount");
   assert.equal(requests[0].authorization, "Bearer fixture-service-key-long-enough");
+  assert.equal(result.cursor, "2");
+});
+
+test("HubSpot adapter resumes after its private incremental cursor", async () => {
+  const fixtureFetch = async (input) => {
+    const url = new URL(input);
+    assert.equal(url.searchParams.get("after"), "previous-record");
+    return Response.json({ results: [{ id: "next-record", updatedAt: "2026-11-26T01:00:00Z", properties: { amount: "25" } }] });
+  };
+  const result = await fetchHubSpotRecords("fixture-service-key-long-enough", "deals", ["amount"], fixtureFetch, "previous-record");
+  assert.equal(result.records.length, 1);
+  assert.equal(result.cursor, "next-record");
 });
 
 test("HubSpot connection tests fail safely for authorization and rate limits", async () => {

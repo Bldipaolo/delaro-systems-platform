@@ -11,7 +11,7 @@ export type MetricObservation = {
   periodLabel: string | null;
   source: string | null;
   sourceName?: string | null;
-  sourceStatus?: "draft" | "configured" | "healthy" | "stale" | "degraded" | "disabled" | null;
+  sourceStatus?: "draft" | "configured" | "healthy" | "stale" | "degraded" | "failed" | "authentication_required" | "disabled" | null;
   sourceHealthSummary?: string | null;
   sourceLastSuccessfulAt?: string | null;
   sourceLastRecordAt?: string | null;

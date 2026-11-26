@@ -41,9 +41,13 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_APP_URL=
 NEXT_PUBLIC_DELARO_DEMO_MODE=
+CRON_SECRET=
+MEASUREMENT_SOURCE_ENCRYPTION_KEY=
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is required by server-only client invitation and authenticated workflow-ingestion paths. It must be configured as an encrypted server-only environment variable and must never use a `NEXT_PUBLIC_` prefix or be committed. `NEXT_PUBLIC_APP_URL` is the canonical deployed origin used for invitation callbacks. The legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` is still accepted for older environments. Allow the exact local origin in Supabase Auth (for example `http://localhost:3200/auth/callback`) and the deployed HTTPS callback. Keep demo mode off for pilot and production deployments.
+
+`CRON_SECRET` authenticates Vercel's measurement-source scheduler and must be at least 24 random characters. `MEASUREMENT_SOURCE_ENCRYPTION_KEY` is a server-only, base64url-encoded 32-byte AES key used to encrypt provider credentials. Do not rotate it without re-encrypting stored credentials.
 
 ## Project structure
 
@@ -59,6 +63,7 @@ NEXT_PUBLIC_DELARO_DEMO_MODE=
 - `lib/operational-events/` — client-safe activity types and labeled Northstar examples.
 - `lib/implementation-management/` — implementation lifecycle, architecture/workflow registry types, and explicit demo examples.
 - `lib/supabase/` — browser and server Supabase clients.
+- `lib/measurement-sources/` — provider-neutral normalization, scheduling, encrypted credentials, cursor state, and provider adapters.
 - `lib/auth/` — role and permission helpers.
 - `lib/validation/` — input schemas.
 - `supabase/migrations/` — ordered database foundation, tenant/RLS, operational model, measurement, economic-impact, approval, publication, and private-document migrations.
@@ -77,6 +82,8 @@ The server layout for `app/(delaro)/` checks the resolved membership role before
 Server-side data access is implemented through `lib/supabase/server.ts`, `lib/auth/context.ts`, and the `lib/data/` loaders. `getCurrentUserContext()` resolves the authenticated Supabase user, profile, active memberships, validated active organization, and role on the server. A single active organization is selected automatically; for multi-organization users, the `delaro_active_organization` cookie is treated only as a preference and is accepted only when it matches an active membership. Server loaders and actions apply organization checks before querying or writing, while Supabase RLS remains the final enforcement layer. The data functions fall back to demo data only when Supabase is not configured. Apply the SQL files in `supabase/migrations/` to create the database foundation, organizations, memberships, opportunities, initiatives, and related policies.
 
 The n8n reporting workflow is documented in [`docs/integrations/n8n-observability.md`](docs/integrations/n8n-observability.md). Internal users can register an existing workflow directly under an authorized client without first creating an implementation. Reporter tokens are scoped to one workflow, stored only as hashes, and should be kept in the client-owned n8n credential store.
+
+The automated measurement-source architecture is documented in [`docs/stage4c-automated-measurement.md`](docs/stage4c-automated-measurement.md). Internal users register and map sources at `/internal/data-sources`. Existing n8n/API pushes and scheduled pull adapters normalize into the same Stage 4A observations; provider secrets and cursors remain service-only.
 
 ## Client and tenant separation
 

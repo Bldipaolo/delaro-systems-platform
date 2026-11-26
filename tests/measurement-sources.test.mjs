@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { applyMappingTransform, normalizeProviderRecords, readProviderField, sourcePayloadDigest } from "../lib/measurement-sources/normalization.ts";
+import { measurementSourceMakesDerivedValueStale } from "../lib/measurement-sources/health.ts";
 
 const mapping = {
   id: "e4030000-0000-4000-8000-000000000011",
@@ -38,4 +39,27 @@ test("normalization rejects nonnumeric mapped values and produces stable digests
   assert.throws(() => normalizeProviderRecords([{ id: "bad", updatedAt: "2026-11-25T12:00:00Z", properties: { duration_ms: "unknown" } }], mapping), /numeric/);
   assert.equal(sourcePayloadDigest({ id: 1 }), sourcePayloadDigest({ id: 1 }));
   assert.notEqual(sourcePayloadDigest({ id: 1 }), sourcePayloadDigest({ id: 2 }));
+});
+
+test("count and median are constrained auditable aggregations", () => {
+  const countMapping = { ...mapping, valueField: "id", aggregationMethod: "count" };
+  const count = normalizeProviderRecords([
+    { id: "nonnumeric-a", updatedAt: "2026-11-25T12:00:00Z" },
+    { id: "nonnumeric-b", updatedAt: "2026-11-25T13:00:00Z" },
+  ], countMapping);
+  assert.equal(count[0].rawValue, 2);
+  const median = normalizeProviderRecords([
+    { id: "1", updatedAt: "2026-11-25T12:00:00Z", properties: { duration_ms: 100 } },
+    { id: "2", updatedAt: "2026-11-25T13:00:00Z", properties: { duration_ms: 900 } },
+    { id: "3", updatedAt: "2026-11-25T14:00:00Z", properties: { duration_ms: 300 } },
+  ], { ...mapping, aggregationMethod: "median" });
+  assert.equal(median[0].rawValue, 300);
+});
+
+test("source health propagates to derived economic-input freshness", () => {
+  assert.equal(measurementSourceMakesDerivedValueStale("healthy"), false);
+  for (const status of ["configured", "stale", "degraded", "failed", "authentication_required", "disabled"]) {
+    assert.equal(measurementSourceMakesDerivedValueStale(status), true);
+  }
+  assert.equal(measurementSourceMakesDerivedValueStale(null), false);
 });

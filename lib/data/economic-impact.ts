@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { calculateValueModel, summarizeEconomicImpact } from "@/lib/economic-impact/calculate";
 import { demoValueModels } from "@/lib/economic-impact/demo";
 import { calculateImprovement } from "@/lib/measurement/calculations";
+import { measurementSourceMakesDerivedValueStale } from "@/lib/measurement-sources/health";
+import type { MeasurementSourceStatus } from "@/lib/measurement-sources/types";
 import type { CalculatedValueModel, EconomicSummary, ValueCategory, ValueCost, ValueEvidence, ValueInput, ValueModel, ValueValidation } from "@/lib/economic-impact/types";
 import { safeEvidenceUrl } from "@/lib/security/safe-url";
 
@@ -40,7 +42,7 @@ function latest(items: Row[], dateField: string): Row | undefined {
   return [...items].sort((a, b) => String(b[dateField] ?? "").localeCompare(String(a[dateField] ?? "")))[0];
 }
 
-function resolveInput(input: Row, metricRows: Row[], baselineRows: Row[], observationRows: Row[]): ValueInput {
+function resolveInput(input: Row, metricRows: Row[], baselineRows: Row[], observationRows: Row[], sourceRows: Row[]): ValueInput {
   const metricId = text(input.metric_id);
   const derivation = String(input.derivation ?? "manual") as ValueInput["derivation"];
   const metric = metricRows.find((item) => item.id === metricId);
@@ -52,13 +54,17 @@ function resolveInput(input: Row, metricRows: Row[], baselineRows: Row[], observ
   const latestObserved = latest(observations, "measured_at");
   let value = numeric(input.value);
   let measuredAt: string | null = null;
+  let selectedObservation: Row | undefined;
   if (derivation === "metric_baseline") {
     value = numeric(baseline?.value); measuredAt = text(baseline?.verified_at) ?? text(baseline?.period_end);
   } else if (derivation === "metric_latest_verified") {
+    selectedObservation = latestVerified;
     value = numeric(latestVerified?.measured_value); measuredAt = text(latestVerified?.measured_at);
   } else if (derivation === "metric_latest_observed") {
+    selectedObservation = latestObserved;
     value = numeric(latestObserved?.measured_value); measuredAt = text(latestObserved?.measured_at);
   } else if (derivation === "metric_improvement_absolute" || derivation === "metric_improvement_percentage") {
+    selectedObservation = latestVerified;
     const baselineValue = numeric(baseline?.value); const currentValue = numeric(latestVerified?.measured_value);
     if (baselineValue !== null && currentValue !== null && metric) {
       const result = calculateImprovement(baselineValue, currentValue, String(metric.improvement_direction) as "increase" | "decrease" | "target", null);
@@ -69,12 +75,16 @@ function resolveInput(input: Row, metricRows: Row[], baselineRows: Row[], observ
   }
   const staleAfterDays = numeric(input.stale_after_days);
   const measuredTime = measuredAt ? Date.parse(measuredAt) : Number.NaN;
-  const stale = staleAfterDays !== null && Number.isFinite(measuredTime) && Date.now() - measuredTime > staleAfterDays * 86_400_000;
+  const source = sourceRows.find((item) => item.id === selectedObservation?.measurement_source_id);
+  const sourceStatus = text(source?.status) as MeasurementSourceStatus | null;
+  const ageStale = staleAfterDays !== null && Number.isFinite(measuredTime) && Date.now() - measuredTime > staleAfterDays * 86_400_000;
+  const stale = ageStale || measurementSourceMakesDerivedValueStale(sourceStatus);
   return {
     id: String(input.id), key: String(input.input_key), label: String(input.label), role: input.role as ValueInput["role"],
     value: value ?? Number.NaN, unit: String(input.unit), origin: input.origin as ValueInput["origin"],
     sourceDescription: String(input.source_description), evidenceId: text(input.evidence_id), metricId, derivation,
-    measuredAt, staleAfterDays, stale, sensitivityLow: numeric(input.sensitivity_low), sensitivityHigh: numeric(input.sensitivity_high),
+    measuredAt, staleAfterDays, stale, sourceName: text(source?.name), sourceStatus,
+    sensitivityLow: numeric(input.sensitivity_low), sensitivityHigh: numeric(input.sensitivity_high),
   };
 }
 
@@ -87,7 +97,7 @@ async function getEconomicImpact(internal: boolean): Promise<{ models: Calculate
   const client = await createClient();
   if (!client) throw new Error("Supabase is not configured.");
   const organizationId = context.organization.id;
-  const [modelRows, inputRows, evidenceRows, snapshotRows, initiativeRows, metricRows, baselineRows, observationRows, metricLinkRows, workflowLinkRows, costRows, validationRows] = await Promise.all([
+  const [modelRows, inputRows, evidenceRows, snapshotRows, initiativeRows, metricRows, baselineRows, observationRows, sourceRows, metricLinkRows, workflowLinkRows, costRows, validationRows] = await Promise.all([
     rows(client, "value_models", "id,organization_id,initiative_id,opportunity_id,workflow_id,metric_id,name,category,formula_kind,calculation_method,annualization_basis,currency_code,benefit_stream_key,recoverable_percentage,expected_capture_percentage,confidence,confidence_rationale,economic_mechanism,time_horizon,attribution_percentage,attribution_rationale,client_visible,status,aggregation_approved_at", organizationId),
     rows(client, "value_model_inputs", "id,organization_id,model_id,input_key,label,role,value,unit,origin,source_description,evidence_id,metric_id,derivation,stale_after_days,sensitivity_low,sensitivity_high,client_visible,sort_order", organizationId),
     rows(client, "value_evidence", "id,organization_id,model_id,source_type,source_reference,document_url,description,verification_status,client_visible", organizationId),
@@ -95,7 +105,8 @@ async function getEconomicImpact(internal: boolean): Promise<{ models: Calculate
     rows(client, "initiatives", "id,organization_id,title", organizationId),
     rows(client, "measurement_metrics", "id,organization_id,name,unit,improvement_direction,client_visible", organizationId),
     rows(client, "metric_baselines", "id,organization_id,metric_id,value,period_start,period_end,verification_status,verified_at", organizationId),
-    rows(client, "metric_observations", "id,organization_id,metric_id,measured_value,measured_at,period_start,period_end,verification_status,measurement_status", organizationId),
+    rows(client, "metric_observations", "id,organization_id,metric_id,measured_value,measured_at,period_start,period_end,verification_status,measurement_status,measurement_source_id", organizationId),
+    rows(client, "measurement_sources", "id,organization_id,name,status", organizationId),
     rows(client, "value_model_metric_links", "id,organization_id,model_id,metric_id,relationship,client_visible", organizationId),
     rows(client, "value_model_workflows", "id,organization_id,model_id,workflow_id,client_visible", organizationId),
     rows(client, "value_model_costs", "id,organization_id,model_id,category,label,amount,currency_code,cadence,annualization_factor,source_description,evidence_id,verification_status,client_visible", organizationId),
@@ -110,7 +121,7 @@ async function getEconomicImpact(internal: boolean): Promise<{ models: Calculate
       const inputs: ValueInput[] = inputRows
         .filter((input) => input.model_id === id && (internal || input.client_visible === true))
         .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
-        .map((input) => resolveInput(input, metricRows, baselineRows, observationRows));
+        .map((input) => resolveInput(input, metricRows, baselineRows, observationRows, sourceRows));
       const evidence: ValueEvidence[] = evidenceRows.filter((item) => item.model_id === id && (internal || item.client_visible === true)).map((item) => ({
         id: String(item.id), sourceType: String(item.source_type), sourceReference: String(item.source_reference),
         description: text(item.description), documentUrl: safeEvidenceUrl(item.document_url),

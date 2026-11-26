@@ -29,14 +29,17 @@ export async function createMeasurementSource(formData: FormData) {
   const input = z.object({
     organizationId: z.string().uuid(), name: z.string().trim().min(2).max(160), description: optionalText,
     providerType: z.enum(["hubspot","api","database","webhook","csv","manual","other"]),
-    connectionMode: z.enum(["push","pull","manual"]), externalReference: z.string().trim().max(500).transform((value)=>value||null),
+    sourceCategory: z.enum(["crm","erp","accounting","scheduling","database","api","automation","support","spreadsheet","file_import","custom","manual"]),
+    environment: z.enum(["production","sandbox","test","other"]),
+    connectionMode: z.enum(["push","pull","batch","manual"]), externalReference: z.string().trim().max(500).transform((value)=>value||null),
     scheduleEnabled: z.string().optional(), scheduleIntervalMinutes: z.coerce.number().int().min(5).max(10080),
     staleAfterMinutes: z.coerce.number().int().min(15).max(525600), clientVisible: z.string().optional(),
   }).parse(Object.fromEntries(formData));
   const client = await workspace(input.organizationId);
   const { error } = await client.from("measurement_sources").insert({
     organization_id: input.organizationId, name: input.name, description: input.description,
-    provider_type: input.providerType, connection_mode: input.connectionMode, external_reference: input.externalReference,
+    provider_type: input.providerType, source_category: input.sourceCategory, environment: input.environment,
+    connection_mode: input.connectionMode, external_reference: input.externalReference,
     status: "draft", schedule_enabled: false, schedule_interval_minutes: input.scheduleIntervalMinutes,
     stale_after_minutes: input.staleAfterMinutes, client_visible: input.clientVisible === "on",
   });
@@ -51,7 +54,7 @@ export async function createMetricMapping(formData: FormData) {
     timestampField: z.union([fieldPath,z.literal("")]).transform((value)=>value||null),
     externalIdField: z.union([fieldPath,z.literal("")]).transform((value)=>value||null),
     transformKind: z.enum(["identity","scale","duration_ms_to_seconds","minor_currency_to_major","fraction_to_percentage"]),
-    aggregationMethod: z.enum(["latest","count","sum","average","minimum","maximum"]),
+    aggregationMethod: z.enum(["latest","count","sum","average","median","minimum","maximum"]),
     periodGranularity: z.enum(["event","day","week","month","quarter"]), clientVisible: z.string().optional(),
   }).parse(Object.fromEntries(formData));
   const client = await workspace(input.organizationId);

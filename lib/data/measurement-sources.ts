@@ -19,7 +19,7 @@ export type InternalSyncRun = {
 
 export type InternalMeasurementSource = {
   id: string; name: string; description: string | null; providerType: MeasurementProvider;
-  connectionMode: string; externalReference: string | null; status: MeasurementSourceStatus;
+  sourceCategory: string; environment: string; connectionMode: string; externalReference: string | null; status: MeasurementSourceStatus;
   clientVisible: boolean; scheduleEnabled: boolean; scheduleIntervalMinutes: number;
   staleAfterMinutes: number; nextSyncAt: string | null; lastSuccessfulAt: string | null;
   lastFailedAt: string | null; lastRecordAt: string | null; consecutiveFailures: number;
@@ -42,7 +42,7 @@ function demoWorkspace(): InternalMeasurementSourceWorkspace {
     metrics: [{ id: "demo-response", name: "Lead response time", unit: "minutes" }],
     sources: [{
       id: "demo-hubspot", name: "HubSpot sales operations", description: "Illustrative CRM measurement source.",
-      providerType: "hubspot", connectionMode: "pull", externalReference: "Demo portal", status: "healthy",
+      providerType: "hubspot", sourceCategory: "crm", environment: "sandbox", connectionMode: "pull", externalReference: "Demo portal", status: "healthy",
       clientVisible: true, scheduleEnabled: true, scheduleIntervalMinutes: 60, staleAfterMinutes: 1440,
       nextSyncAt: new Date(Date.now() + 38 * 60_000).toISOString(), lastSuccessfulAt: new Date(Date.now() - 22 * 60_000).toISOString(),
       lastFailedAt: null, lastRecordAt: new Date(Date.now() - 22 * 60_000).toISOString(), consecutiveFailures: 0,
@@ -65,7 +65,7 @@ export async function getInternalMeasurementSources(requestedOrganizationId?: st
   if (!selected) throw new Error("No internal client organization is available.");
   const organizationId = selected.id;
   const [sourceResult, mappingResult, runResult, metricResult] = await Promise.all([
-    client.from("measurement_sources").select("id,name,description,provider_type,connection_mode,external_reference,status,client_visible,schedule_enabled,schedule_interval_minutes,stale_after_minutes,next_sync_at,last_successful_at,last_failed_at,last_record_at,consecutive_failures,health_summary,workflow_id").eq("organization_id", organizationId).order("name"),
+    client.from("measurement_sources").select("id,name,description,provider_type,source_category,environment,connection_mode,external_reference,status,client_visible,schedule_enabled,schedule_interval_minutes,stale_after_minutes,next_sync_at,last_successful_at,last_failed_at,last_record_at,consecutive_failures,health_summary,workflow_id").eq("organization_id", organizationId).order("name"),
     client.from("measurement_source_mappings").select("id,source_id,metric_id,name,provider_object,value_field,transform_kind,aggregation_method,period_granularity,status,client_visible").eq("organization_id", organizationId).order("name"),
     client.from("measurement_sync_runs").select("id,source_id,status,trigger_type,attempt,records_seen,records_accepted,records_failed,error_summary,started_at,finished_at,created_at").eq("organization_id", organizationId).order("created_at", { ascending: false }).limit(100),
     client.from("measurement_metrics").select("id,name,unit").eq("organization_id", organizationId).eq("status", "active").order("name"),
@@ -79,6 +79,7 @@ export async function getInternalMeasurementSources(requestedOrganizationId?: st
     organizationId, organizationName: selected.name, organizations, metrics, demo: false,
     sources: ((sourceResult.data ?? []) as unknown as Row[]).map((row): InternalMeasurementSource => ({
       id: String(row.id), name: String(row.name), description: text(row.description), providerType: row.provider_type as MeasurementProvider,
+      sourceCategory: String(row.source_category), environment: String(row.environment),
       connectionMode: String(row.connection_mode), externalReference: text(row.external_reference), status: row.status as MeasurementSourceStatus,
       clientVisible: row.client_visible === true, scheduleEnabled: row.schedule_enabled === true,
       scheduleIntervalMinutes: Number(row.schedule_interval_minutes), staleAfterMinutes: Number(row.stale_after_minutes),

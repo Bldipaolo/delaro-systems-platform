@@ -63,6 +63,11 @@ function aggregate(values: number[], method: MeasurementSourceMapping["aggregati
   if (method === "count") return values.length;
   if (method === "sum") return values.reduce((total, value) => total + value, 0);
   if (method === "average") return values.reduce((total, value) => total + value, 0) / values.length;
+  if (method === "median") {
+    const ordered = [...values].sort((a, b) => a - b);
+    const middle = Math.floor(ordered.length / 2);
+    return ordered.length % 2 ? ordered[middle] : (ordered[middle - 1] + ordered[middle]) / 2;
+  }
   if (method === "minimum") return Math.min(...values);
   if (method === "maximum") return Math.max(...values);
   return values.at(-1) ?? Number.NaN;
@@ -84,7 +89,7 @@ export function normalizeProviderRecords(
     if (!sourceRecordId) throw new Error("Mapped source record ID is empty.");
     return {
       sourceRecordId,
-      rawValue: numeric(readProviderField(record, mapping.valueField)),
+      rawValue: mapping.aggregationMethod === "count" ? 1 : numeric(readProviderField(record, mapping.valueField)),
       measuredAt,
     };
   }).sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());

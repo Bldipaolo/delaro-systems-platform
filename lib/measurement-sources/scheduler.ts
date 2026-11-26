@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sanitizeSyncError } from "@/lib/measurement-sources/scheduler-protocol";
 import { normalizeProviderRecords, sourcePayloadDigest } from "@/lib/measurement-sources/normalization";
 import { readHubSpotSourceSecret } from "@/lib/measurement-sources/secrets";
+import { readMeasurementSourceSyncState, storeMeasurementSourceSyncState } from "@/lib/measurement-sources/sync-state";
 import {
   assertHubSpotObjectType,
   fetchHubSpotRecords,
@@ -65,6 +66,8 @@ async function loadHubSpotSource(claim: ClaimedSyncRun) {
 async function executeHubSpotSource(claim: ClaimedSyncRun): Promise<SourceSyncResult> {
   const { client, mappings } = await loadHubSpotSource(claim);
   const accessToken = await readHubSpotSourceSecret(claim.source_id, claim.organization_id);
+  const cursorState = await readMeasurementSourceSyncState(claim.source_id, claim.organization_id);
+  const nextCursorState = { ...cursorState };
   const byObject = new Map<HubSpotObjectType, StoredMapping[]>();
   for (const mapping of mappings) byObject.set(mapping.providerObject, [...(byObject.get(mapping.providerObject) ?? []), mapping]);
 
@@ -76,17 +79,27 @@ async function executeHubSpotSource(claim: ClaimedSyncRun): Promise<SourceSyncRe
   const cursors: string[] = [];
 
   for (const [objectType, objectMappings] of byObject) {
-    const fetched = await fetchHubSpotRecords(accessToken, objectType, hubSpotPropertiesForMappings(objectMappings));
-    recordsSeen += fetched.records.length;
-    if (fetched.cursor) cursors.push(`${objectType}:${fetched.cursor}`);
+    const fetched = await fetchHubSpotRecords(
+      accessToken,
+      objectType,
+      hubSpotPropertiesForMappings(objectMappings),
+      fetch,
+      cursorState[objectType],
+    );
+    if (fetched.cursor) {
+      cursors.push(`${objectType}:${fetched.cursor}`);
+      nextCursorState[objectType] = fetched.cursor;
+    }
     for (const mapping of objectMappings) {
       let observations;
       try {
         observations = normalizeProviderRecords(fetched.records, mapping);
       } catch {
+        recordsSeen += 1;
         recordsFailed += 1;
         continue;
       }
+      recordsSeen += observations.length;
       for (const observation of observations) {
         const digest = sourcePayloadDigest({
           sourceId: claim.source_id,
@@ -118,6 +131,10 @@ async function executeHubSpotSource(claim: ClaimedSyncRun): Promise<SourceSyncRe
         if (!lastRecordAt || observation.measuredAt > lastRecordAt) lastRecordAt = observation.measuredAt;
       }
     }
+  }
+
+  if (recordsFailed === 0) {
+    await storeMeasurementSourceSyncState(claim.source_id, claim.organization_id, nextCursorState);
   }
 
   return {
@@ -161,9 +178,12 @@ export async function runScheduledMeasurementSyncs(
     try {
       result = await executor(claim);
     } catch (cause) {
+      const providerCode = cause && typeof cause === "object" && "code" in cause && typeof cause.code === "string"
+        ? cause.code.slice(0, 100)
+        : cause instanceof DOMException && cause.name === "TimeoutError" ? "TIMEOUT" : "PROVIDER_ERROR";
       result = {
         status: "failed", recordsSeen: 0, recordsAccepted: 0,
-        recordsDuplicate: 0, recordsFailed: 0, errorCode: "PROVIDER_ERROR",
+        recordsDuplicate: 0, recordsFailed: 0, errorCode: providerCode,
         errorSummary: sanitizeSyncError(cause),
       };
     }
