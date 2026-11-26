@@ -1500,6 +1500,60 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
 .credential-ledger-row strong { display: flex; flex-direction: column; gap: 4px; color: var(--color-navy); font: 500 11px var(--font-display); }
 .credential-ledger-row small { color: var(--color-muted); font: 9px var(--font-body); }
 
+/* Stage 4C measurement sources — evidence, mapping, and health in one ledger. */
+.workflow-organization-bar > div > p { max-width: 52ch; margin: 6px 0 0; color: var(--color-muted); font-size: 10px; line-height: 1.5; }
+.source-health-ledger { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 42px 0 50px; border-top: 1px solid var(--color-navy); border-bottom: 1px solid var(--color-border); }
+.source-health-ledger > div { min-height: 104px; display: flex; flex-direction: column; justify-content: space-between; padding: 22px 22px 20px 0; }
+.source-health-ledger > div:not(:first-child) { padding-left: 22px; border-left: 1px solid var(--color-border); }
+.source-health-ledger span { color: var(--color-muted); font-size: 10px; }
+.source-health-ledger strong { font: 500 29px/1 var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
+.source-create-panel { margin-bottom: 58px; border-top: 1px solid var(--color-sea-glass-ink); border-bottom: 1px solid var(--color-border); }
+.source-create-panel > summary, .source-actions details > summary { cursor: pointer; list-style: none; color: var(--color-navy); font: 600 11px var(--font-body); }
+.source-create-panel > summary { padding: 17px 0; }
+.source-create-panel > summary::-webkit-details-marker, .source-actions details > summary::-webkit-details-marker { display: none; }
+.source-create-panel > summary::after, .source-actions details > summary::after { float: right; color: var(--color-sea-glass-ink); content: "+"; }
+.source-create-panel[open] > summary::after, .source-actions details[open] > summary::after { content: "−"; }
+.source-create-panel > .pilot-form { border-top: 1px solid var(--color-border); padding: 26px 0 34px; }
+.source-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.source-form-wide { grid-column: 1 / -1; }
+.source-form-note { max-width: 72ch; margin: 0; color: var(--color-muted); font-size: 10px; line-height: 1.6; }
+.source-record { border-top: 1px solid var(--color-navy); padding-top: 24px; margin-top: 54px; }
+.source-record-header { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(460px, 1.15fr); gap: 50px; align-items: start; }
+.source-record-header h2 { margin: 10px 0 8px; font: 500 25px/1.2 var(--font-display); }
+.source-record-header p { max-width: 58ch; margin: 0; color: var(--color-slate); font-size: 11px; line-height: 1.6; }
+.source-record-header dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin: 4px 0 0; }
+.source-record-header dt { color: var(--color-muted); font-size: 9px; }
+.source-record-header dd { margin: 6px 0 0; color: var(--color-navy); font-size: 10px; overflow-wrap: anywhere; }
+.source-state { display: inline-flex; align-items: center; gap: 7px; color: var(--color-muted); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+.source-state i { width: 6px; height: 6px; border-radius: 50%; background: var(--color-silver); }
+.source-state-healthy { color: var(--color-sea-glass-ink); }
+.source-state-healthy i { background: var(--color-sea-glass-ink); box-shadow: 0 0 0 4px oklch(0.72 0.09 174 / .13); }
+.source-state-stale, .source-state-degraded { color: var(--color-warning-ink); }
+.source-state-stale i, .source-state-degraded i { background: var(--color-warning); }
+.source-state-disabled { color: var(--color-danger); }
+.source-health-line { display: flex; flex-wrap: wrap; gap: 12px 28px; margin-top: 24px; padding: 13px 0; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); color: var(--color-muted); font-size: 9px; }
+.source-health-line strong { color: var(--color-navy); font-weight: 600; }
+.source-subheading { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; margin-top: 28px; padding-bottom: 11px; }
+.source-subheading h3 { margin: 0; font: 500 15px var(--font-display); }
+.source-subheading span { color: var(--color-muted); font-size: 9px; }
+.source-mapping-row { display: grid; grid-template-columns: minmax(190px, 1.25fr) minmax(180px, 1fr) minmax(130px, .7fr) minmax(120px, .7fr) 90px; gap: 20px; align-items: center; min-height: 66px; border-top: 1px solid var(--color-border); color: var(--color-slate); font-size: 9px; }
+.source-mapping-row strong { display: flex; flex-direction: column; gap: 4px; color: var(--color-navy); font: 500 11px var(--font-display); }
+.source-mapping-row small { color: var(--color-muted); font: 9px var(--font-body); }
+.source-mapping-row span { overflow-wrap: anywhere; }
+.source-actions { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: start; padding: 15px 0 18px; border-top: 1px solid var(--color-border); }
+.source-actions > form button, .source-actions > details > summary { min-height: 34px; display: inline-flex; align-items: center; border: 0; background: transparent; padding: 6px 0; color: var(--color-sea-glass-ink); font-size: 10px; }
+.source-actions > form button { cursor: pointer; font-weight: 600; }
+.source-actions > details { flex: 1 1 100%; border-top: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent); }
+.source-actions > details > summary { width: 100%; }
+.source-actions .source-form-grid { padding: 20px 0 26px; }
+.source-actions .source-disable { color: var(--color-danger); }
+.source-run-list { border-top: 1px solid var(--color-border); }
+.source-run-list > div { display: grid; grid-template-columns: minmax(160px, .8fr) minmax(140px, .6fr) minmax(140px, .6fr) minmax(220px, 1fr); gap: 18px; align-items: center; min-height: 61px; border-bottom: 1px solid var(--color-border); color: var(--color-slate); font-size: 9px; }
+.source-run-list strong { display: flex; flex-direction: column; gap: 4px; color: var(--color-navy); font: 600 10px var(--font-body); text-transform: capitalize; }
+.source-run-list small { color: var(--color-muted); font: 9px var(--font-body); }
+.analytics-source-warning { margin: 18px 0 0; padding: 13px 0; border-top: 1px solid var(--color-sea-glass-ink); border-bottom: 1px solid var(--color-border); color: var(--color-slate); font-size: 10px; line-height: 1.55; }
+.analytics-source-warning strong { color: var(--color-navy); }
+
 @media (max-width: 1180px) {
   .analytics-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .analytics-kpi:nth-child(3) { border-left: 0; border-top: 1px solid var(--color-border); padding-left: 0; }
@@ -1537,6 +1591,12 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
   .client-directory-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 18px; padding: 17px 0; }
   .client-directory-row > div:first-child { grid-column: 1 / -1; }
   .client-admin-grid { grid-template-columns: 1fr; gap: 12px; }
+  .source-health-ledger { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .source-health-ledger > div:nth-child(3) { border-left: 0; border-top: 1px solid var(--color-border); padding-left: 0; }
+  .source-health-ledger > div:nth-child(4) { border-top: 1px solid var(--color-border); }
+  .source-record-header { grid-template-columns: 1fr; gap: 25px; }
+  .source-mapping-row { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 14px 0; }
+  .source-mapping-row strong { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
   .workflow-kpis { grid-template-columns: 1fr; }
@@ -1588,4 +1648,11 @@ h3 { font-size: 16px; letter-spacing: -.015em; margin-bottom: 8px; }
   .pilot-form-pair, .member-controls { grid-template-columns: 1fr; display: grid; }
   .relationship-ledger { grid-template-columns: 1fr; }
   .relationship-ledger p:not(:first-child) { padding-left: 0; border-top: 1px solid var(--color-border); border-left: 0; }
+  .source-health-ledger, .source-form-grid { grid-template-columns: 1fr; }
+  .source-health-ledger > div, .source-health-ledger > div:not(:first-child), .source-health-ledger > div:nth-child(3) { min-height: 78px; padding: 16px 0; border-left: 0; border-top: 1px solid var(--color-border); }
+  .source-health-ledger > div:first-child { border-top: 0; }
+  .source-form-wide { grid-column: auto; }
+  .source-record-header dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .source-mapping-row, .source-run-list > div { grid-template-columns: 1fr; gap: 7px; padding: 14px 0; }
+  .source-mapping-row strong { grid-column: auto; }
 }

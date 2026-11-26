@@ -42,16 +42,18 @@ export async function getInternalMeasurement(): Promise<{ metrics: ImpactMetric[
   const client = await createClient();
   if (!client) throw new Error("Supabase is unavailable.");
   const organizationId = context.organization.id;
-  const [metricRows, baselines, targets, observations, measurementEvidence, valueEvidence, models, people, systems] = await Promise.all([
+  const [metricRows, baselines, targets, observations, measurementEvidence, valueEvidence, models, people, systems, measurementSources, sourceMappings] = await Promise.all([
     rows(client, "measurement_metrics", "id,initiative_id,name,description,unit,improvement_direction,source_system_id,measurement_method,cadence,owner_membership_id,confidence_status,client_visible", organizationId),
     rows(client, "metric_baselines", "id,metric_id,value,period_start,period_end,source_description,evidence_id,verification_status", organizationId),
     rows(client, "metric_targets", "id,metric_id,value,target_date,rationale", organizationId),
-    rows(client, "metric_observations", "id,metric_id,measured_value,measured_at,period_start,period_end,source_description,source_reference,sample_size,evidence_id,verification_status,measurement_status,client_visible", organizationId),
+    rows(client, "metric_observations", "id,metric_id,measured_value,measured_at,period_start,period_end,source_description,source_reference,sample_size,evidence_id,verification_status,measurement_status,client_visible,measurement_source_id,source_mapping_id", organizationId),
     rows(client, "measurement_evidence", "id,metric_id,source_type,source_reference,document_url,description,verification_status,client_visible", organizationId),
     rows(client, "value_evidence", "id,model_id,source_type,source_reference,document_url,description,verification_status,client_visible", organizationId),
     rows(client, "value_models", "id,name", organizationId),
     rows(client, "operational_people", "id,membership_id,display_name", organizationId),
     rows(client, "systems", "id,name", organizationId),
+    rows(client, "measurement_sources", "id,name,status,health_summary,last_successful_at,last_record_at,client_visible", organizationId),
+    rows(client, "measurement_source_mappings", "id,source_id,metric_id,status,client_visible", organizationId),
   ]);
 
   const evidenceById = new Map(measurementEvidence.map((item) => [String(item.id), item]));
@@ -90,6 +92,9 @@ export async function getInternalMeasurement(): Promise<{ metrics: ImpactMetric[
       .sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
     const owner = people.find((item) => item.membership_id === metric.owner_membership_id);
     const system = systems.find((item) => item.id === metric.source_system_id);
+    const sourceMapping = sourceMappings.find((item) => item.metric_id === id && item.status === "active");
+    const sourceId = text(latestObserved?.measurement_source_id) ?? text(sourceMapping?.source_id);
+    const measurementSource = measurementSources.find((item) => item.id === sourceId);
     return {
       id, initiativeId: text(metric.initiative_id), name: String(metric.name), description: text(metric.description),
       unit: String(metric.unit), direction: metric.improvement_direction as ImpactMetric["direction"],
@@ -103,6 +108,9 @@ export async function getInternalMeasurement(): Promise<{ metrics: ImpactMetric[
       latestObservedStatus: latestObserved ? (text(latestObserved.measurement_status) as MeasurementTrustState) : null,
       measurementPeriod: latestObserved ? period(latestObserved.period_start, latestObserved.period_end) : null,
       source: text(latestObserved?.source_reference) ?? text(latestObserved?.source_description) ?? text(system?.name) ?? text(baseline?.source_description),
+      sourceName: text(measurementSource?.name), sourceStatus: (text(measurementSource?.status) as ImpactMetric["sourceStatus"]) ?? null,
+      sourceHealthSummary: text(measurementSource?.health_summary), sourceLastSuccessfulAt: text(measurementSource?.last_successful_at),
+      sourceLastRecordAt: text(measurementSource?.last_record_at),
       measurementMethod: text(metric.measurement_method), cadence: text(metric.cadence),
       evidenceConfidence: metric.confidence_status as ImpactMetric["evidenceConfidence"],
       evidenceDescription: text(currentEvidence?.description) ?? text(currentEvidence?.source_reference),

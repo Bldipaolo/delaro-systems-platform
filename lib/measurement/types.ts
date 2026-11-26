@@ -10,6 +10,11 @@ export type MetricObservation = {
   periodEnd: string | null;
   periodLabel: string | null;
   source: string | null;
+  sourceName?: string | null;
+  sourceStatus?: "draft" | "configured" | "healthy" | "stale" | "degraded" | "disabled" | null;
+  sourceHealthSummary?: string | null;
+  sourceLastSuccessfulAt?: string | null;
+  sourceLastRecordAt?: string | null;
   verificationStatus: EvidenceStatus;
   evidenceStatus: EvidenceStatus;
   evidenceDescription: string | null;
