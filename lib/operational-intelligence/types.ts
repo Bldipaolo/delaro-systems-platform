@@ -2,7 +2,7 @@ export type SignalSeverity = "info" | "low" | "medium" | "high" | "critical";
 export type SignalStatus = "active" | "monitoring" | "acknowledged" | "resolved" | "dismissed";
 export type SignalOutcome = "triggered" | "normal" | "suppressed" | "insufficient_data";
 export type ImprovementDirection = "increase" | "decrease" | "target";
-export type SourceHealth = "healthy" | "configured" | "stale" | "degraded" | "failed" | "auth_required" | "disabled" | "draft";
+export type SourceHealth = "healthy" | "configured" | "stale" | "degraded" | "failed" | "authentication_required" | "disabled" | "draft";
 
 export interface NumericPoint {
   value: number;

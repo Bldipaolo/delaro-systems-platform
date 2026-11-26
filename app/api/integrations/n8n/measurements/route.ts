@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { evaluateMetricObservation } from "@/lib/operational-intelligence/evaluator";
 import { maxMetricObservationBytes, metricObservationSchema, metricSha256, parseMetricIntegrationToken } from "@/lib/measurement/ingestion";
 
 export const runtime = "nodejs";
@@ -45,6 +46,13 @@ export async function POST(request: Request) {
     if (error.code?.startsWith("22") || error.code === "23514") return response({ accepted: false, error: "Invalid metric observation." }, 400);
     return response({ accepted: false, error: "Metric observation could not be recorded." }, 503);
   }
-  const result = data as { duplicate?: boolean } | null;
+  const result = data as { duplicate?: boolean; observation_id?: string | null } | null;
+  if (!result?.duplicate && result?.observation_id) {
+    try {
+      await evaluateMetricObservation(result.observation_id);
+    } catch {
+      console.error("Operational intelligence evaluation failed after metric ingestion.");
+    }
+  }
   return response({ accepted: true, duplicate: Boolean(result?.duplicate) }, result?.duplicate ? 200 : 202);
 }

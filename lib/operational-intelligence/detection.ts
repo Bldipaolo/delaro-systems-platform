@@ -225,7 +225,7 @@ export function evaluateSourceHealth(input: { status: SourceHealth; consecutiveF
   if (input.status === "healthy" || input.status === "configured" || input.status === "draft" || input.status === "disabled") {
     return emptyResult("normal", input.status === "healthy" ? "source_healthy" : `source_${input.status}`, now, { sourceHealth: input.status });
   }
-  const severity: SignalSeverity = input.status === "auth_required" || input.consecutiveFailures >= 5 ? "high"
+  const severity: SignalSeverity = input.status === "authentication_required" || input.consecutiveFailures >= 5 ? "high"
     : input.status === "failed" || input.consecutiveFailures >= 3 ? "medium" : "low";
   return {
     ...emptyResult("triggered", `source_${input.status}`, now, { sourceHealth: input.status, staleMinutes: input.staleMinutes,

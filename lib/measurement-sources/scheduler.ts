@@ -11,6 +11,7 @@ import {
   type HubSpotObjectType,
 } from "@/lib/measurement-sources/providers/hubspot";
 import type { MeasurementSourceMapping } from "@/lib/measurement-sources/types";
+import { evaluateScheduledOperationalIntelligence } from "@/lib/operational-intelligence/evaluator";
 
 export type ClaimedSyncRun = {
   run_id: string;
@@ -201,6 +202,11 @@ export async function runScheduledMeasurementSyncs(
     });
     if (completionError) throw new Error(`Unable to complete measurement sync work: ${completionError.code ?? "unknown"}`);
     outcomes.push({ runId: claim.run_id, status: result.status });
+  }
+  try {
+    await evaluateScheduledOperationalIntelligence();
+  } catch {
+    console.error("Scheduled operational intelligence evaluation failed.");
   }
   return outcomes;
 }

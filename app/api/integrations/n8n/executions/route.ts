@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { evaluateWorkflowExecution } from "@/lib/operational-intelligence/evaluator";
 import { maxWorkflowEventBytes, parseIntegrationToken, sanitizeErrorSummary, sha256, workflowEventSchema } from "@/lib/workflow-observability/protocol";
 
 export const runtime = "nodejs";
@@ -52,5 +53,12 @@ export async function POST(request: Request) {
     return response({ accepted: false, error: "Execution event could not be recorded." }, 503);
   }
   const result = data as { accepted?: boolean; duplicate?: boolean; execution_id?: string | null } | null;
+  if (!result?.duplicate && result?.execution_id) {
+    try {
+      await evaluateWorkflowExecution(result.execution_id);
+    } catch {
+      console.error("Operational intelligence evaluation failed after workflow ingestion.");
+    }
+  }
   return response({ accepted: true, duplicate: Boolean(result?.duplicate) }, result?.duplicate ? 200 : 202);
 }
