@@ -30,7 +30,7 @@ Every public record carries `organization_id`. Composite tenant foreign keys, ap
 
 Push sources reuse the existing Stage 4A metric reporter and Stage 3 n8n reporter architecture: credentials are scoped, revocable, hashed, rate limited, and resolved server-side. Existing n8n workflows were backfilled into the source registry and do not need to reconnect.
 
-Pull sources are claimed by the server-only scheduler at `/api/measurement-sources/sync`. Vercel invokes it every 15 minutes with `CRON_SECRET`; PostgreSQL atomically claims due rows and prevents concurrent runs for the same source. The provider adapter fetches bounded records, normalization produces the existing Stage 4A observation contract, and PostgreSQL applies the final transformation and idempotency checks.
+Pull sources are claimed by the server-only scheduler at `/api/measurement-sources/sync`. The current Vercel Hobby deployment invokes it daily at 06:15 UTC with `CRON_SECRET`; PostgreSQL atomically claims only sources that are actually due and prevents concurrent runs for the same source. The same authenticated endpoint supports a higher-frequency external scheduler, or the Vercel schedule can return to a shorter interval after upgrading to a plan that permits it. The provider adapter fetches bounded records, normalization produces the existing Stage 4A observation contract, and PostgreSQL applies the final transformation and idempotency checks.
 
 Transient failures use bounded exponential backoff. Authentication, authorization, invalid mapping, and configuration failures stop the schedule and require an internal operator to reconnect or repair the source. A successful connection test produces `configured`; only a successful sync or authenticated observation produces `healthy`.
 

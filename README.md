@@ -83,7 +83,7 @@ Server-side data access is implemented through `lib/supabase/server.ts`, `lib/au
 
 The n8n reporting workflow is documented in [`docs/integrations/n8n-observability.md`](docs/integrations/n8n-observability.md). Internal users can register an existing workflow directly under an authorized client without first creating an implementation. Reporter tokens are scoped to one workflow, stored only as hashes, and should be kept in the client-owned n8n credential store.
 
-The automated measurement-source architecture is documented in [`docs/stage4c-automated-measurement.md`](docs/stage4c-automated-measurement.md). Internal users register and map sources at `/internal/data-sources`. Existing n8n/API pushes and scheduled pull adapters normalize into the same Stage 4A observations; provider secrets and cursors remain service-only.
+The automated measurement-source architecture is documented in [`docs/stage4c-automated-measurement.md`](docs/stage4c-automated-measurement.md). Internal users register and map sources at `/internal/data-sources`. Existing n8n/API pushes and scheduled pull adapters normalize into the same Stage 4A observations; provider secrets and cursors remain service-only. The included Vercel Hobby schedule runs daily; deployments needing tighter freshness should use Vercel Pro or an external scheduler that authenticates to the same endpoint with `CRON_SECRET`.
 
 ## Client and tenant separation
 
