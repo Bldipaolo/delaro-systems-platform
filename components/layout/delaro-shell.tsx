@@ -10,7 +10,7 @@ import { useMobileNavigation } from "@/components/layout/use-mobile-navigation";
 type InternalLink = readonly [string, string, (props: { size?: number }) => React.ReactNode];
 const sections: { title: string; links: InternalLink[] }[] = [
   { title: "Workspace", links: [["Portfolio", "/portfolio", OverviewIcon], ["Clients", "/clients", OverviewIcon]] },
-  { title: "Diagnose", links: [["Operations", "/internal/operations", OperationsIcon], ["Constraints", "/internal/constraints", ReviewIcon], ["Opportunities", "/opportunities", PerformanceIcon], ["Business cases", "/internal/business-cases", DocumentIcon]] },
+  { title: "Diagnose", links: [["Operations", "/internal/operations", OperationsIcon], ["Intelligence", "/internal/intelligence", PerformanceIcon], ["Constraints", "/internal/constraints", ReviewIcon], ["Opportunities", "/opportunities", PerformanceIcon], ["Business cases", "/internal/business-cases", DocumentIcon]] },
   { title: "Deliver", links: [["Improvements", "/internal/initiatives", InitiativeIcon], ["Implementations", "/internal/implementations", OperationsIcon], ["Workflow monitoring", "/internal/workflows", PerformanceIcon], ["Decisions", "/internal/decisions", ReviewIcon], ["Exceptions", "/internal/exceptions", OperationsIcon]] },
   { title: "Measure", links: [["Metrics", "/measurement", PerformanceIcon], ["Data sources", "/internal/data-sources", OperationsIcon], ["Evidence", "/internal/evidence", DocumentIcon], ["Value realization", "/internal/value-realization", PerformanceIcon]] },
 ];

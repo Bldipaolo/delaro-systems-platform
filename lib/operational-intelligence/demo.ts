@@ -1,0 +1,57 @@
+import type { OperationalSignalView } from "@/lib/operational-intelligence/view-types";
+
+const now = new Date("2026-11-26T12:00:00.000Z");
+const ago = (days: number) => new Date(now.getTime() - days * 86_400_000).toISOString();
+
+export const demoOperationalSignals: OperationalSignalView[] = [
+  {
+    id: "demo-response-time", organizationId: "demo-northstar", organizationName: "Northstar Manufacturing",
+    ruleId: "demo-rule-response", title: "Customer response time moved outside its expected range",
+    summary: "The recent median is 17.8 min, compared with 11.4 min in the reference period.",
+    signalType: "metric_deterioration", entityType: "metric", severity: "high", confidence: "high", status: "active",
+    visibility: "client_visible", currentValue: 17.8, referenceValue: 11.4, percentageDeviation: 56.1, unit: "min",
+    currentSampleSize: 42, referenceSampleSize: 183, consecutivePeriods: 3, currentWindowStart: ago(3), currentWindowEnd: now.toISOString(),
+    referenceWindowStart: ago(33), referenceWindowEnd: ago(3), firstDetectedAt: ago(3), lastObservedAt: now.toISOString(),
+    detectionMethod: "rolling_median", processId: "demo-intake", processName: "Customer intake", operationalAreaId: "demo-sales",
+    operationalAreaName: "Sales", workflowId: null, workflowName: null, metricId: "demo-response-metric", metricName: "Customer response time",
+    sourceId: "demo-crm-source", sourceName: "CRM measurement source",
+    evidence: { statistic: "median", direction: "decrease", currentSamples: 42, referenceSamples: 183 },
+    events: [{ id: "demo-event-response", type: "detected", summary: "Customer response-time change detected.", occurredAt: ago(3) }],
+    internalNotes: "Illustrative Stage 5A signal. No production conclusion.",
+    rule: { currentWindowMinutes: 4320, referenceWindowMinutes: 43200, minimumCurrentSamples: 3, minimumReferenceSamples: 7, minimumConsecutivePeriods: 2, deviationThresholdPct: 30, publicationMode: "review_required" },
+    demo: true,
+  },
+  {
+    id: "demo-source-stale", organizationId: "demo-northstar", organizationName: "Northstar Manufacturing",
+    ruleId: "demo-rule-source", title: "CRM measurement source connection needs attention",
+    summary: "The measurement connection is stale. Business performance is not inferred while source health is unresolved.",
+    signalType: "source_degraded", entityType: "measurement_source", severity: "medium", confidence: "high", status: "active",
+    visibility: "client_visible", currentValue: 480, referenceValue: null, percentageDeviation: null, unit: "min",
+    currentSampleSize: 1, referenceSampleSize: 0, consecutivePeriods: 2, currentWindowStart: null, currentWindowEnd: now.toISOString(),
+    referenceWindowStart: null, referenceWindowEnd: null, firstDetectedAt: ago(1), lastObservedAt: now.toISOString(),
+    detectionMethod: "source_health", processId: null, processName: null, operationalAreaId: null, operationalAreaName: null,
+    workflowId: null, workflowName: null, metricId: null, metricName: null, sourceId: "demo-crm-source", sourceName: "CRM measurement source",
+    evidence: { sourceHealth: "stale", currentSamples: 1, referenceSamples: 0 },
+    events: [{ id: "demo-event-source", type: "detected", summary: "CRM measurement source needs attention.", occurredAt: ago(1) }],
+    rule: { currentWindowMinutes: 60, referenceWindowMinutes: 1440, minimumCurrentSamples: 1, minimumReferenceSamples: 1, minimumConsecutivePeriods: 1, deviationThresholdPct: null, publicationMode: "auto_publish" },
+    demo: true,
+  },
+  {
+    id: "demo-workflow-recovered", organizationId: "demo-northstar", organizationName: "Northstar Manufacturing",
+    ruleId: "demo-rule-workflow", title: "Email Agent reliability returned to its expected range",
+    summary: "The workflow is reporting within its recent reference range after a short failure-rate increase.",
+    signalType: "workflow_failure_rate", entityType: "workflow", severity: "low", confidence: "medium", status: "resolved",
+    visibility: "client_visible", currentValue: 2.1, referenceValue: 2.4, percentageDeviation: -12.5, unit: "%",
+    currentSampleSize: 48, referenceSampleSize: 190, consecutivePeriods: 1, currentWindowStart: ago(1), currentWindowEnd: now.toISOString(),
+    referenceWindowStart: ago(31), referenceWindowEnd: ago(1), firstDetectedAt: ago(8), lastObservedAt: now.toISOString(),
+    detectionMethod: "failure_rate", processId: "demo-intake", processName: "Customer intake", operationalAreaId: "demo-sales",
+    operationalAreaName: "Sales", workflowId: "demo-email-agent", workflowName: "Test Email Agent", metricId: null, metricName: null,
+    sourceId: null, sourceName: null, evidence: { statistic: "failure_rate", currentSamples: 48, referenceSamples: 190 },
+    events: [
+      { id: "demo-event-workflow-1", type: "detected", summary: "Email Agent reliability change detected.", occurredAt: ago(8) },
+      { id: "demo-event-workflow-2", type: "resolved", summary: "Email Agent reliability returned to normal.", occurredAt: ago(1) },
+    ],
+    rule: { currentWindowMinutes: 1440, referenceWindowMinutes: 43200, minimumCurrentSamples: 5, minimumReferenceSamples: 10, minimumConsecutivePeriods: 1, deviationThresholdPct: 15, publicationMode: "review_required" },
+    demo: true,
+  },
+];

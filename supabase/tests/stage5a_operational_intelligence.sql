@@ -38,6 +38,13 @@ do $$ begin
     where created_by_membership_id is distinct from 'e5020000-0000-4000-8000-000000000001'
        or updated_by_membership_id is distinct from 'e5020000-0000-4000-8000-000000000001'
   ) then raise exception 'Rule attribution was not stamped'; end if;
+  begin
+    update public.operational_signal_rules
+      set detection_method='rolling_median',client_publication_mode='auto_publish'
+      where id='e5040000-0000-4000-8000-000000000001';
+    raise exception 'Interpretive rule accepted automatic publication';
+  exception when check_violation then null;
+  end;
 end $$;
 reset role;
 

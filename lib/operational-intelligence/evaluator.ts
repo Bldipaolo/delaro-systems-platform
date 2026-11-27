@@ -211,7 +211,9 @@ async function persistResult(rule: StoredRule, context: EntityContext, result: D
 
   const now = new Date().toISOString();
   const copy = signalCopy(rule, context, result);
-  const automaticPublication = rule.client_publication_mode === "auto_publish" && result.confidence === "high";
+  const automaticPublication = rule.client_publication_mode === "auto_publish"
+    && rule.entity_type === "measurement_source" && rule.detection_method === "source_health"
+    && result.confidence === "high";
   const visibility = automaticPublication ? "client_visible" : existing?.visibility_status ?? "internal_only";
   const publicationReason = automaticPublication ? "automatic_infrastructure" : existing?.publication_reason ?? null;
   const payload = {
