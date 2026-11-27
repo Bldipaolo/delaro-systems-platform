@@ -1,10 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
   evaluateMetricDeviation, evaluateSourceHealth, evaluateTargetBreach, evaluateWorkflowDuration,
   evaluateWorkflowFailureRate, operationalSignalIdentity, severityFromEvidence, transitionSignal,
 } from "../lib/operational-intelligence/detection.ts";
 import { interquartileRange, median, medianAbsoluteDeviation, percentile } from "../lib/operational-intelligence/statistics.ts";
+import { signalDate, signalValue } from "../components/intelligence/signal-format.ts";
 
 const now = new Date("2026-11-26T12:00:00.000Z");
 const minutesAgo = (minutes) => new Date(now.getTime() - minutes * 60_000).toISOString();
@@ -102,4 +104,25 @@ test("hysteresis monitors one recovery pass before resolving", () => {
   const reopened=transitionSignal({existingStatus:"resolved",outcome:"triggered",recoveryPasses:2});
   assert.equal(reopened.status,"active");
   assert.equal(reopened.event,"reopened");
+});
+
+test("signal formatting preserves units, missing values, and dates", () => {
+  assert.equal(signalValue(17.8,"min"),"17.8 min");
+  assert.equal(signalValue(56.1,"%"),"56.1%");
+  assert.equal(signalValue(null,"USD"),"Not available");
+  assert.equal(signalDate("2026-11-26T12:00:00.000Z"),"Nov 26, 2026");
+});
+
+test("client attention keeps empty and illustrative states explicit", async () => {
+  const source = await readFile(new URL("../components/intelligence/client-attention.tsx", import.meta.url),"utf8");
+  assert.match(source,/No published signals need attention/);
+  assert.match(source,/Illustrative demo signals/);
+  assert.match(source,/Detection does not imply diagnosis|not production findings/i);
+});
+
+test("intelligence layouts retain mobile alternatives", async () => {
+  const css = await readFile(new URL("../app/globals.css", import.meta.url),"utf8");
+  assert.match(css,/@media \(max-width: 760px\)[\s\S]*\.signal-comparison[\s\S]*grid-template-columns: 1fr/);
+  assert.match(css,/@media \(max-width: 520px\)[\s\S]*\.signal-filters[\s\S]*grid-template-columns: 1fr/);
+  assert.match(css,/\.attention-signal-list > a \{ min-height: 122px/);
 });
