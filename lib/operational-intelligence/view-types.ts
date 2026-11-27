@@ -47,6 +47,10 @@ export type OperationalSignalView = {
   sourceId: string | null;
   sourceName: string | null;
   evidence: Record<string, unknown>;
+  economicContext: {
+    statement?: string;
+    models?: Array<{ id: string; name: string; currencyCode: string; verifiedAnnualizedValue: number | null }>;
+  };
   events: OperationalSignalEvent[];
   internalNotes?: string | null;
   rule?: {

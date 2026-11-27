@@ -6,7 +6,7 @@ import {
   evaluateWorkflowFailureRate, operationalSignalIdentity, severityFromEvidence, transitionSignal,
 } from "../lib/operational-intelligence/detection.ts";
 import { interquartileRange, median, medianAbsoluteDeviation, percentile } from "../lib/operational-intelligence/statistics.ts";
-import { signalDate, signalValue } from "../components/intelligence/signal-format.ts";
+import { signalDate, signalMoney, signalValue } from "../components/intelligence/signal-format.ts";
 
 const now = new Date("2026-11-26T12:00:00.000Z");
 const minutesAgo = (minutes) => new Date(now.getTime() - minutes * 60_000).toISOString();
@@ -110,6 +110,8 @@ test("signal formatting preserves units, missing values, and dates", () => {
   assert.equal(signalValue(17.8,"min"),"17.8 min");
   assert.equal(signalValue(56.1,"%"),"56.1%");
   assert.equal(signalValue(null,"USD"),"Not available");
+  assert.equal(signalMoney(127420,"USD"),"$127,420");
+  assert.equal(signalMoney(null,"USD"),"Verified value pending");
   assert.equal(signalDate("2026-11-26T12:00:00.000Z"),"Nov 26, 2026");
 });
 

@@ -17,9 +17,10 @@ type SignalRow = {
   first_detected_at: string; last_observed_at: string; detection_method: string;
   process_id: string | null; operational_area_id: string | null; workflow_id: string | null;
   metric_id: string | null; measurement_source_id: string | null; evidence_summary: Record<string, unknown> | null;
+  economic_context: OperationalSignalView["economicContext"] | null;
 };
 
-const signalSelect = "id,organization_id,rule_id,title,business_summary,signal_type,entity_type,severity,confidence,status,visibility_status,current_value,reference_value,percentage_deviation,unit,current_sample_size,reference_sample_size,consecutive_periods,current_window_start,current_window_end,reference_window_start,reference_window_end,first_detected_at,last_observed_at,detection_method,process_id,operational_area_id,workflow_id,metric_id,measurement_source_id,evidence_summary";
+const signalSelect = "id,organization_id,rule_id,title,business_summary,signal_type,entity_type,severity,confidence,status,visibility_status,current_value,reference_value,percentage_deviation,unit,current_sample_size,reference_sample_size,consecutive_periods,current_window_start,current_window_end,reference_window_start,reference_window_end,first_detected_at,last_observed_at,detection_method,process_id,operational_area_id,workflow_id,metric_id,measurement_source_id,evidence_summary,economic_context";
 
 function numberOrNull(value: unknown) {
   const parsed = typeof value === "number" ? value : Number(value);
@@ -74,6 +75,7 @@ async function hydrateSignals(rows: SignalRow[], organizationNames: Map<string, 
       evidence: row.evidence_summary ?? {}, events: (eventsResult.data ?? []).filter((event) => event.signal_id === row.id).map((event) => ({
         id: event.id, type: event.event_type, summary: event.summary, occurredAt: event.occurred_at,
       })),
+      economicContext: row.economic_context ?? {},
       ...(internal ? {
         internalNotes: details.get(row.id)?.internal_notes ?? null,
         rule: rule ? { currentWindowMinutes: rule.current_window_minutes, referenceWindowMinutes: rule.reference_window_minutes,

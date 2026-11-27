@@ -1,8 +1,8 @@
 # Production readiness acceptance record
 
-Updated 26 November 2026.
+Updated 27 November 2026.
 
-**Status: The tested Stage 1–4C controls pass at the database, application, deployment, and authenticated browser layers. The platform is not yet unconditionally production-ready: live HubSpot acceptance, higher-frequency pull scheduling, leaked-password protection, dependency advisories, and the previously documented document-governance work remain open.**
+**Status: The tested Stage 1–5A controls pass at the database and application layers. The platform is not yet unconditionally production-ready: live HubSpot acceptance, a real signal crossing production evidence thresholds, higher-frequency pull scheduling, leaked-password protection, dependency advisories, and the previously documented document-governance work remain open.**
 
 This record covers the Stage 1 hardening performed after commit `4c0e44b04dacd1499d1a7ad63e2bece09c8f1895` and the focused Stage 2 implementation-management verification appended below.
 
@@ -219,3 +219,38 @@ Stage 4C release limitations and follow-up:
 4. Add operator-facing backfill controls and external alert delivery for repeated source failures. Current failure state and sanitized summaries are visible internally, but alerts are not pushed outside Delaro.
 5. Enable Supabase leaked-password protection and retain the documented client-safe `get_client_workflow_monitoring` `SECURITY DEFINER` review.
 6. `npm audit --omit=dev` still reports one moderate Next.js advisory path and one high PostCSS advisory. The automated remediation is a semver-major Next.js 16 upgrade and was not introduced during this focused stage.
+
+## Stage 5A operational intelligence — 27 November 2026
+
+Stage 5A adds deterministic signal detection over authenticated workflow telemetry, verified measurements, and source-health records. It does not use an LLM to create anomalies and does not automate diagnosis, opportunity creation, remediation, or financial claims.
+
+| Control or journey | Result | Actual verification | Evidence / limitation |
+| --- | --- | --- | --- |
+| Tenant-owned intelligence schema | PASS | Applied `stage5a_operational_intelligence` and `stage5a_publication_guard`; executed the dedicated rollback SQL suite. | Rules, signals, private details, events, and evaluations are organization-scoped with RLS, explicit grants, composite relationships, and application/database guards. |
+| Cross-tenant and suspended-user isolation | PASS | SQL switched authenticated JWT subjects across tenants and to a suspended membership. | Foreign and suspended users could not read or mutate the tenant's signal records. |
+| Client/internal field separation | PASS | SQL queried public and private intelligence records as internal and client roles. | Client roles received published signal summaries only; internal details and evaluator diagnostics remained private. |
+| Evaluator-managed field immutability | PASS | SQL attempted authenticated direct changes to detector-owned signal values and identities. | PostgreSQL rejected the mutations while preserving authorized lifecycle controls. |
+| Publication integrity | PASS | SQL tested reviewed publication attribution and attempted automatic publication on business signals. | Reviewer membership is database-derived; automatic publication is limited to high-confidence infrastructure source-health signals. |
+| Deterministic detection and suppression | PASS | Node tests covered median/MAD/IQR, metric direction, target breach, workflow failure rate/duration, sample guards, incompatible data, stale sources, severity, identity, and hysteresis. | Insufficient, incompatible, and stale business evidence does not create a signal. |
+| Event-triggered evaluation | PASS | Code-path and unit review of accepted workflow executions, metric observation ingestion, and scheduled source synchronization. | Evaluation is bounded and advisory; ingestion is not rolled back if evaluation fails. A production event after deployment remains required to prove persistence in live runtime. |
+| Signal deduplication and audit lifecycle | PASS | SQL asserted one deterministic identity and exactly-once lifecycle/activity events; Node tests exercised recovery and reopen behavior. | Repeated evaluations update the current signal; append-only audit records preserve state changes. |
+| Client-safe operational attention | PASS | Local production-build browser smoke at desktop and 390 × 844 across internal Intelligence, client Attention, and signal detail. | Plain-language evidence, relationships, history, empty states, and responsive layouts rendered without page-level overflow. Demo records were labeled illustrative. |
+| Conservative economic context | PASS | Loader/evaluator review plus formatting tests. | Only active, client-visible, aggregation-approved models and latest verified realized snapshots are associated. Streams are not summed and no causal loss is inferred; missing verification reads `Verified value pending`. |
+| Live Test Email Agent evidence threshold | PASS | Read-only production query over current and reference terminal execution windows. | Two current samples versus a five-sample minimum correctly produced `insufficient_data`; no anomaly was invented. See `docs/stage5a-operational-intelligence.md`. |
+| SQL integration suite | PASS | Executed `supabase/tests/stage5a_operational_intelligence.sql` against `qxebrulkxkdvovleoqao`. | Tenant isolation, suspension, privacy, immutable evaluator fields, publication, deduplication, and exactly-once activity assertions passed; fixtures rolled back. |
+| Unit suite | PASS | `npm test` in the clean Stage 5A checkout. | 84 passed, 0 failed, including detection, formatting, empty-state, and mobile-layout coverage. |
+| TypeScript | PASS | `npm run typecheck` in the same checkout. | Exit code 0. |
+| Production build | PASS | `npm run build` with the configured public Supabase environment. | Next.js 15.5.29 compiled successfully and generated 40 routes, including internal Intelligence and client Attention detail. |
+| Design audit | PASS | Impeccable detector and responsive browser review. | Detector returned no findings; no design suppression was added. |
+
+Applied Stage 5A migrations:
+
+- `stage5a_operational_intelligence`
+- `stage5a_publication_guard`
+
+Stage 5A release limitations and follow-up:
+
+1. Observe one genuine post-deployment event or scheduled evaluation that persists a real production signal after the configured evidence and persistence thresholds are met.
+2. Increase pull-source scheduling frequency if the pilot requires sub-daily source-health detection; the current Vercel plan runs the scheduled source job daily.
+3. Keep diagnosis, constraint/opportunity creation, client publication of business signals, and remediation human-reviewed in Stage 5B.
+4. Enable Supabase leaked-password protection and retain the existing Auth, dependency, live HubSpot, and document-governance blockers above.

@@ -190,6 +190,40 @@ async function recordEvaluation(rule: StoredRule, result: DetectionResult, signa
   if (error) throw new Error(`Unable to record intelligence evaluation: ${error.code ?? "unknown"}`);
 }
 
+async function loadEconomicContext(context: EntityContext) {
+  if (!context.metricId && !context.workflowId) return {};
+  const client = createAdminClient();
+  const linkedModelIds = new Set<string>();
+  if (context.metricId) {
+    const { data } = await client.from("value_model_metric_links").select("model_id")
+      .eq("organization_id", context.organizationId).eq("metric_id", context.metricId).eq("client_visible", true).limit(20);
+    for (const row of data ?? []) linkedModelIds.add(row.model_id);
+  }
+  if (context.workflowId) {
+    const { data } = await client.from("value_model_workflows").select("model_id")
+      .eq("organization_id", context.organizationId).eq("workflow_id", context.workflowId).eq("client_visible", true).limit(20);
+    for (const row of data ?? []) linkedModelIds.add(row.model_id);
+  }
+  const { data: candidates, error } = await client.from("value_models")
+    .select("id,name,currency_code,metric_id,workflow_id").eq("organization_id", context.organizationId)
+    .eq("status", "active").eq("client_visible", true).not("aggregation_approved_at", "is", null).limit(50);
+  if (error) return {};
+  const models = (candidates ?? []).filter((model) => model.metric_id === context.metricId
+    || model.workflow_id === context.workflowId || linkedModelIds.has(model.id));
+  if (!models.length) return {};
+  const { data: snapshots } = await client.from("value_realization_snapshots")
+    .select("model_id,annualized_run_rate,period_end").eq("organization_id", context.organizationId)
+    .in("model_id", models.map((model) => model.id)).eq("verification_status", "verified")
+    .eq("realization_state", "realized").eq("client_visible", true).order("period_end", { ascending: false });
+  const latest = new Map<string, number | null>();
+  for (const snapshot of snapshots ?? []) if (!latest.has(snapshot.model_id)) latest.set(snapshot.model_id, numeric(snapshot.annualized_run_rate));
+  return {
+    statement: "Associated verified value context; no causation or loss is inferred.",
+    models: models.map((model) => ({ id: model.id, name: model.name, currencyCode: model.currency_code,
+      verifiedAnnualizedValue: latest.get(model.id) ?? null })),
+  };
+}
+
 async function persistResult(rule: StoredRule, context: EntityContext, result: DetectionResult) {
   const client = createAdminClient();
   const identity = operationalSignalIdentity(context.organizationId, rule.id, context.entityId, rule.signal_type);
@@ -211,6 +245,7 @@ async function persistResult(rule: StoredRule, context: EntityContext, result: D
 
   const now = new Date().toISOString();
   const copy = signalCopy(rule, context, result);
+  const economicContext = await loadEconomicContext(context);
   const automaticPublication = rule.client_publication_mode === "auto_publish"
     && rule.entity_type === "measurement_source" && rule.detection_method === "source_health"
     && result.confidence === "high";
@@ -253,7 +288,7 @@ async function persistResult(rule: StoredRule, context: EntityContext, result: D
     reviewed_by_membership_id: automaticPublication ? null : existing?.reviewed_by_membership_id ?? null,
     reviewed_at: automaticPublication ? null : existing?.reviewed_at ?? null,
     evidence_summary: safeEvidence(result, transition.recoveryPasses),
-    economic_context: {},
+    economic_context: economicContext,
   };
   const { data: signal, error } = await client.from("operational_signals").upsert(payload, { onConflict: "organization_id,identity_key" }).select("id").single();
   if (error || !signal) throw new Error(`Unable to persist intelligence signal: ${error?.code ?? "unknown"}`);

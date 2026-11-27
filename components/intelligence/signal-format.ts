@@ -17,6 +17,11 @@ export function signalDate(value: string | null) {
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(value));
 }
 
+export function signalMoney(value: number | null, currencyCode: string) {
+  if (value === null) return "Verified value pending";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: currencyCode, maximumFractionDigits: 0 }).format(value);
+}
+
 export function signalPeriod(signal: OperationalSignalView) {
   if (!signal.currentWindowStart) return `Observed ${signalDate(signal.lastObservedAt)}`;
   return `${signalDate(signal.currentWindowStart)} – ${signalDate(signal.currentWindowEnd)}`;

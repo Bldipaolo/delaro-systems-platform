@@ -16,6 +16,7 @@ export const demoOperationalSignals: OperationalSignalView[] = [
     operationalAreaName: "Sales", workflowId: null, workflowName: null, metricId: "demo-response-metric", metricName: "Customer response time",
     sourceId: "demo-crm-source", sourceName: "CRM measurement source",
     evidence: { statistic: "median", direction: "decrease", currentSamples: 42, referenceSamples: 183 },
+    economicContext: { statement: "Associated verified value context; no causation or loss is inferred.", models: [{ id: "demo-capacity-model", name: "Response capacity model", currencyCode: "USD", verifiedAnnualizedValue: 127420 }] },
     events: [{ id: "demo-event-response", type: "detected", summary: "Customer response-time change detected.", occurredAt: ago(3) }],
     internalNotes: "Illustrative Stage 5A signal. No production conclusion.",
     rule: { currentWindowMinutes: 4320, referenceWindowMinutes: 43200, minimumCurrentSamples: 3, minimumReferenceSamples: 7, minimumConsecutivePeriods: 2, deviationThresholdPct: 30, publicationMode: "review_required" },
@@ -32,6 +33,7 @@ export const demoOperationalSignals: OperationalSignalView[] = [
     detectionMethod: "source_health", processId: null, processName: null, operationalAreaId: null, operationalAreaName: null,
     workflowId: null, workflowName: null, metricId: null, metricName: null, sourceId: "demo-crm-source", sourceName: "CRM measurement source",
     evidence: { sourceHealth: "stale", currentSamples: 1, referenceSamples: 0 },
+    economicContext: {},
     events: [{ id: "demo-event-source", type: "detected", summary: "CRM measurement source needs attention.", occurredAt: ago(1) }],
     rule: { currentWindowMinutes: 60, referenceWindowMinutes: 1440, minimumCurrentSamples: 1, minimumReferenceSamples: 1, minimumConsecutivePeriods: 1, deviationThresholdPct: null, publicationMode: "auto_publish" },
     demo: true,
@@ -47,6 +49,7 @@ export const demoOperationalSignals: OperationalSignalView[] = [
     detectionMethod: "failure_rate", processId: "demo-intake", processName: "Customer intake", operationalAreaId: "demo-sales",
     operationalAreaName: "Sales", workflowId: "demo-email-agent", workflowName: "Test Email Agent", metricId: null, metricName: null,
     sourceId: null, sourceName: null, evidence: { statistic: "failure_rate", currentSamples: 48, referenceSamples: 190 },
+    economicContext: {},
     events: [
       { id: "demo-event-workflow-1", type: "detected", summary: "Email Agent reliability change detected.", occurredAt: ago(8) },
       { id: "demo-event-workflow-2", type: "resolved", summary: "Email Agent reliability returned to normal.", occurredAt: ago(1) },
