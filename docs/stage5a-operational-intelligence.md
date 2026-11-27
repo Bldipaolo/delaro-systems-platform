@@ -62,7 +62,7 @@ The live `Test Email Agent` history was read on 27 November 2026 without mutatin
 - duration medians: unavailable in both windows;
 - latest execution observed: 27 November 2026 at 16:15:42 UTC.
 
-The default workflow rule requires at least five current samples. The correct result is therefore `insufficient_data`; no signal was fabricated. The next authenticated execution or scheduled evaluation will reassess the rule after the deployed code is active.
+The default workflow rule requires at least five current samples. The live evaluator therefore persisted `insufficient_data` with reason `minimum_samples`; no signal was fabricated. At verification time the production database held eight rules, 15 evaluation records, and zero signals. Future authenticated events and scheduled evaluations will reassess the rules as evidence accumulates.
 
 ## Stage 5B recommendation
 
